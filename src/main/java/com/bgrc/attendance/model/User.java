@@ -8,5 +8,4 @@ import lombok.Getter;
 public class User {
     private String name;
     private String birthDate;
-    private String isActive;
 }
