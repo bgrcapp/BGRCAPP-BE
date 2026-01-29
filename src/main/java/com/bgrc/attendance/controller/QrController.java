@@ -23,7 +23,7 @@ public class QrController {
     @PostMapping("/scan")
     public QrScanResponse scanQR(@RequestBody QrScanRequest request){
         //@RequestBody 어노테이션으로 json 데이터를 객체로 변환
-
+        //private QrScanResponse response;
         return null;
     }
 

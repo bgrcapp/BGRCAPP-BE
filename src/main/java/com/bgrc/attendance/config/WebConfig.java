@@ -13,6 +13,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins("http://localhost:3000") // 프론트엔드 주소
                 .allowedMethods("GET", "POST")
                 .allowedHeaders("*")
-                .allowCredentials(false); // 토큰 전송 여부
+                .allowCredentials(false); // 쿠키, 인증서 등 사용 여부
     }
 }
