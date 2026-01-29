@@ -1,4 +1,4 @@
-package com.bgrc.attendance.domain;
+package com.bgrc.attendance.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
