@@ -120,7 +120,8 @@
 </details>
 
 ## 🗂️ Data Format
-
+<details>
+<summary>펼쳐 보기</summary>
 ### Excel 명단 파일 형식
 
 | 성명 | 생년월일 | 비고 |
@@ -141,6 +142,7 @@
 김철수/1985-05-15/12:31:20
 이영희/1992-03-20/12:32:10
 ```
+</details>
 
 ## 🚀 Future Enhancements
 
