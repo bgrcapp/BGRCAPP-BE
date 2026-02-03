@@ -36,6 +36,33 @@ out/
 ### VS Code ###
 .vscode/
 
-
 ### Private Files ###
-docs
+# 민감한 문서 및 데이터
+docs/
+data/
+
+# 엑셀 파일 (개인정보 포함)
+*.xlsx
+*.xls
+
+# 출석 로그 파일
+*.txt
+
+# 환경 변수 파일
+.env
+.env.local
+.env.*.local
+
+# 데이터베이스 파일
+*.db
+*.sqlite
+*.sqlite3
+
+# 로그 파일
+logs/
+*.log
+
+# 임시 파일
+*.tmp
+*.temp
+~$*
