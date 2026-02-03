@@ -74,8 +74,6 @@
 | 서버 상태 확인 | `GET` | `/api/status`       | 서버 정상 동작 확인 |
 | 🔍 **QR 스캔** | |                     | |
 | QR 스캔 처리 | `POST` | `/api/qr/scan`      | QR 코드 스캔 및 출석 체크 |
-| 👤 **사용자** | |                     | |
-| 사용자 존재 확인 | `GET` | `/api/user/check`   | 명단에 등록된 사용자인지 확인 |
 | ⚙️ **관리자** | |                     | |
 | 시스템 설정 조회 | `GET` | `/api/admin/config` | 현재 시스템 설정 정보 조회 |
 | 명단 파일 업로드 | `POST` | `/api/admin/upload` | Excel 명단 파일 업로드 |
