@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: attendance
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+
+# 파일 업로드 저장 경로
+file:
+  upload:
+    dir: ./data/userlist
+
+# 출석 로그 파일 저장 경로
+attendance:
+  log:
+    dir: ./data/attendance
+
+logging:
+  level:
+    com.bgrc.attendance: info
