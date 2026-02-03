@@ -1,2 +1,9 @@
-GET http://localhost:8080/api/qr/status
+POST http://localhost:8080/api/qr/scan
+Content-Type: application/json
+
+{HI}
+
+###
+GET http://localhost:8080/api/status
 Accept: application/json
+
