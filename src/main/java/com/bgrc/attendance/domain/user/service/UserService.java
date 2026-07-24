@@ -10,6 +10,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -69,6 +70,7 @@ public class UserService {
             Sheet sheet = workbook.getSheetAt(0); // 첫 번째 시트
 
             // 기본값 -1로 설정 (못 찾음을 의미)
+            int serialNumberCol = -1;
             int nameCol = -1;
             int birthCol = -1;
             int headerRowIdx = -1;
@@ -85,6 +87,9 @@ public class UserService {
 
                     String cellValue = cell.toString().trim();
 
+                    if (cellValue.contains("연번")){
+                        serialNumberCol = c;
+                    }
                     if (cellValue.contains("성명")){
                         nameCol = c;
                         headerRowIdx = r;
@@ -93,9 +98,9 @@ public class UserService {
                         birthCol = c;
                     }
                 }
-                if (nameCol != -1 && birthCol != -1) break;
+                if (serialNumberCol != -1 && nameCol != -1 && birthCol != -1) break;
             }
-            if (nameCol == -1 || birthCol == -1) {
+            if (serialNumberCol == -1 || nameCol == -1 || birthCol == -1) {
                 throw new CustomException(ResponseCode.EXCEL_READ_FAILED);
             }
 
@@ -103,6 +108,12 @@ public class UserService {
             for (int r = headerRowIdx + 1; r <= sheet.getLastRowNum(); r++) {
                 Row row = sheet.getRow(r);
                 if (row == null) continue;
+
+                Cell serialNumberCell = row.getCell(serialNumberCol);
+                if (isBlank(serialNumberCell)) {
+                    log.debug("연번이 없는 {}행을 제외합니다.", r + 1);
+                    continue;
+                }
 
                 Cell nameCell = row.getCell(nameCol);
                 Cell birthCell = row.getCell(birthCol);
@@ -119,6 +130,12 @@ public class UserService {
             log.error("Excel 파일 읽기 실패: {}", e.getMessage());
             throw e;
         }
+    }
+
+    private boolean isBlank(Cell cell) {
+        return cell == null
+                || cell.getCellType() == CellType.BLANK
+                || cell.toString().trim().isEmpty();
     }
 
     public Boolean findUser(String name, String birthDate){
