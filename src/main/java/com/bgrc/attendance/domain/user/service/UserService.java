@@ -40,7 +40,6 @@ public class UserService {
             boolean fileExists = excelFileUtils.isExcelExists(excelUploadConfig.getUploadDir());
             if (!fileExists) {
                 log.warn(ResponseCode.EXCEL_FILE_NOT_FOUND.getMessage());
-                initMockData();
                 return;
             }
             // 명단 데이터 파싱
@@ -48,18 +47,6 @@ public class UserService {
         } catch (IOException e) {
             throw new CustomException(ResponseCode.EXCEL_READ_FAILED);
         }
-    }
-
-    /**
-     * 테스트용 Mock 데이터를 초기화합니다.
-     */
-    public void initMockData(){
-        userRepository.clear();
-        userRepository.save(new User("홍길동", "1990-01-15"));
-        userRepository.save(new User("김철수", "1985-03-22"));
-        userRepository.save(new User("이영희", "1992-07-08"));
-        userRepository.save(new User("박민수", "1988-11-30"));
-        userRepository.save(new User("최지혜", "1995-05-17"));
     }
 
     public void loadUsersFromExcel() throws IOException {
