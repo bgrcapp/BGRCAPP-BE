@@ -33,6 +33,9 @@ public class UserService {
     @PostConstruct
     public void init(){
         try {
+            // 명단 재로드는 기존 메모리 명단을 새 파일 기준으로 교체해야 합니다.
+            userRepository.clear();
+
             // 디렉토리 존재 여부 검사
             excelFileUtils.ensureDirectory(excelUploadConfig.getUploadDir());
 

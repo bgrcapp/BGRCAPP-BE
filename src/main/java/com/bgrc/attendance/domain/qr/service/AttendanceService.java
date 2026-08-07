@@ -3,10 +3,14 @@ package com.bgrc.attendance.domain.qr.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import com.bgrc.attendance.global.common.CustomException;
 import com.bgrc.attendance.global.common.ResponseCode;
@@ -14,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,14 +26,20 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor // final 필드만 주입
 @Slf4j // 로깅 사용
 public class AttendanceService {
+    private final AttendanceLogExcelService attendanceLogExcelService;
+
     @Value("${attendance.log.dir}")
     private String attendanceDir;
+
+    private final Set<String> attendedToday = new HashSet<>();
+    private final List<String> confirmationRecords = new ArrayList<>();
+    private LocalDate loadedDate;
 
     /**
      * 출석 로그 디렉토리 생성
      */
     @PostConstruct // 빈 생성 직후 자동 실행
-    public void init(){
+    public synchronized void init(){
         Path dirPath = Path.of(attendanceDir);
         if (!Files.exists(dirPath)){
             try {
@@ -38,6 +49,8 @@ public class AttendanceService {
                 log.error("출석 디렉토리 생성 실패: {}", e.getMessage());
             }
         }
+
+        loadTodayState();
     }
 
     /**
@@ -46,8 +59,8 @@ public class AttendanceService {
      * (ex : C:/Users/무료급식 일일 식사내역_2026-01-30.txt)
      * @return
      */
-    private Path getLogPath(){
-        String date2str = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"));
+    private Path getLogPath(LocalDate date){
+        String date2str = date.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"));
         String logFile = "무료급식 일일 식사내역_%s.txt".formatted(date2str);
         Path logFilePath = Path.of(attendanceDir, logFile);
 
@@ -61,23 +74,11 @@ public class AttendanceService {
      * @param birthDate     생년월일
      * @return
      */
-    public boolean isAttended(String name, String birthDate) {
-        try {
-            Path logPath = getLogPath();
-            // 파일이 없으면 첫 출석
-            if (!Files.exists(logPath)) return false;
-
-            // 이름과 생년월일이 모두 포함되어 있으면 false 반환
-            List<String> content = Files.readAllLines(logPath);
-            String pattern = name + "/" + birthDate;
-
-            for (String line : content){
-                if(line.startsWith(pattern)) return true;
-            }
-        } catch (IOException e) {
-            return false;
-        }
-        return false;
+    public synchronized boolean isAttended(String name, String birthDate) {
+        ensureTodayState();
+        return attendanceLogExcelService.findUniqueTarget(name)
+                .map(target -> attendedToday.contains(target.key()))
+                .orElse(false);
     }
 
     /**
@@ -88,34 +89,98 @@ public class AttendanceService {
      * @param birthDate
      */
     public synchronized void createLog(String name, String birthDate){
+        ensureTodayState();
+
+        Optional<AttendanceLogExcelService.AttendanceTarget> target =
+                attendanceLogExcelService.findUniqueTarget(name);
+        if (target.isEmpty()) {
+            throw new CustomException(ResponseCode.ATTENDANCE_LOG_TARGET_NOT_FOUND);
+        }
+
+        if (attendedToday.contains(target.get().key())) {
+            throw new CustomException(ResponseCode.ALREADY_CHECKED_IN);
+        }
+
+        AttendanceLogExcelService.MarkResult result =
+                attendanceLogExcelService.markAttendance(name, loadedDate);
+        switch (result.status()) {
+            case ALREADY_MARKED -> {
+                attendedToday.add(result.target().key());
+                throw new CustomException(ResponseCode.ALREADY_CHECKED_IN);
+            }
+            case TARGET_NOT_FOUND -> throw new CustomException(ResponseCode.ATTENDANCE_LOG_TARGET_NOT_FOUND);
+            case DATE_NOT_FOUND -> throw new CustomException(ResponseCode.ATTENDANCE_LOG_DATE_NOT_FOUND);
+            case RECORDED -> {
+                attendedToday.add(result.target().key());
+                appendConfirmationLog(name, birthDate);
+            }
+        }
+    }
+
+    private void ensureTodayState() {
+        LocalDate today = LocalDate.now();
+        if (!today.equals(loadedDate)) loadTodayState();
+    }
+
+    private void loadTodayState() {
+        loadedDate = LocalDate.now();
+        attendedToday.clear();
+        confirmationRecords.clear();
+
+        attendanceLogExcelService.initialize();
+        attendedToday.addAll(attendanceLogExcelService.loadTodayMarkedKeys(loadedDate));
+        loadConfirmationLog();
+    }
+
+    /**
+     * 서버 시작 시에만 확인용 txt 로그를 읽어 메모리 상태를 보강합니다.
+     * 정상적인 QR 처리 중에는 txt 파일을 읽지 않습니다.
+     */
+    private void loadConfirmationLog() {
+        Path logPath = getLogPath(loadedDate);
+        if (!Files.exists(logPath)) return;
+
         try {
-            Path logPath = getLogPath();
-            log.debug("출석 파일 경로: {}", logPath.toAbsolutePath());
+            List<String> content = Files.readAllLines(logPath);
+            for (int i = 1; i < content.size(); i++) {
+                String record = content.get(i).trim();
+                if (record.isBlank()) continue;
+                confirmationRecords.add(record);
 
-            // 출석 파일 읽기
-            List<String> content;
-            if (Files.exists(logPath)) {
-                content = Files.readAllLines(logPath); // 파일 있으면 읽기
+                String[] data = record.split("/", 3);
+                if (data.length < 2) continue;
+                attendanceLogExcelService.findUniqueTarget(data[0])
+                        .ifPresent(target -> attendedToday.add(target.key()));
             }
-            else {
-                content = new ArrayList<>(); // 초기화
-            }
-            if (!content.isEmpty()) content.remove(0);
-
-            // 마지막 줄에 "이름/생년월일/시:분:초" 추가
-            String lastRecord = String.format("%s/%s/%s",
-                                            name,
-                                            birthDate,
-                                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            content.add(lastRecord);
-            int count = content.size();
-            String attendCount = String.format("[출석 인원 : %d]", count);
-            content.add(0, attendCount);
-
-            // 출석 파일 덮어쓰기
-            Files.write(logPath, content); // 자동으로 개행 문자 붙음
         } catch (IOException e) {
-            throw new CustomException(ResponseCode.FILE_WRITE_FAILED);
+            log.warn("확인용 출석 로그 복구 실패: {}", logPath, e);
+        }
+    }
+
+    private void appendConfirmationLog(String name, String birthDate) {
+        String record = String.format("%s/%s/%s",
+                name,
+                birthDate,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        confirmationRecords.add(record);
+        writeConfirmationLog(loadedDate);
+    }
+
+    @PreDestroy
+    public synchronized void shutdown() {
+        if (loadedDate != null) writeConfirmationLog(loadedDate);
+    }
+
+    private void writeConfirmationLog(LocalDate date) {
+        List<String> output = new ArrayList<>();
+        output.add(String.format("[출석 인원 : %d]", attendedToday.size()));
+        output.addAll(confirmationRecords);
+
+        try {
+            Files.write(getLogPath(date), output);
+        } catch (IOException e) {
+            // txt는 확인용 보조 로그이므로 Excel 출석 저장 결과를 실패로 되돌리지 않습니다.
+            log.warn("확인용 출석 로그 저장 실패: {}", getLogPath(date), e);
         }
     }
 }

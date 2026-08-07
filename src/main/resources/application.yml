@@ -1,6 +1,9 @@
 spring:
   application:
     name: attendance
+  devtools:
+    restart:
+      enabled: false
   servlet:
     multipart:
       max-file-size: 10MB
@@ -16,6 +19,8 @@ file:
 attendance:
   log:
     dir: ./data/attendance
+    excel: ./data/attendance/무료급식 일일 식사내역_26.8_일지.xlsx
+    sheets: 내역1,내역2
 
 logging:
   level:

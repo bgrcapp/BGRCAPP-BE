@@ -29,6 +29,11 @@ public enum ResponseCode {
         // 3200~ : 출석 관련 오류
         ALREADY_CHECKED_IN(3200, false, "이미 출석 체크되었습니다."),
         FILE_WRITE_FAILED(3201, false, "출석 로그 파일 생성을 실패했습니다."),
+        ATTENDANCE_LOG_READ_FAILED(3202, false, "출석 일지 파일 읽기에 실패했습니다."),
+        ATTENDANCE_LOG_WRITE_FAILED(3203, false, "출석 일지 파일 저장에 실패했습니다."),
+        ATTENDANCE_LOG_FILE_NOT_FOUND(3204, false, "출석 일지 파일을 찾을 수 없습니다."),
+        ATTENDANCE_LOG_TARGET_NOT_FOUND(3205, false, "출석 일지에서 대상자를 찾을 수 없습니다."),
+        ATTENDANCE_LOG_DATE_NOT_FOUND(3206, false, "출석 일지에서 오늘 날짜를 찾을 수 없습니다."),
 
         // 3300~ : 엑셀/관리자 관련 오류
         NO_ATTENDANCE_DATA(3301, false, "출석 데이터가 없습니다."),

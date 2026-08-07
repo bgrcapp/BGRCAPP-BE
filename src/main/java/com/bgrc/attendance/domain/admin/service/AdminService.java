@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.bgrc.attendance.domain.user.config.ExcelUploadConfig;
+import com.bgrc.attendance.global.util.ExcelFileUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,12 +15,15 @@ import com.bgrc.attendance.global.common.CustomException;
 import com.bgrc.attendance.global.common.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminService {
     private final ExcelUploadConfig excelUploadConfig;
     private final UserService userService;
+    private final ExcelFileUtils excelFileUtils;
 
     /**
      * 현재 설정된 엑셀 경로와 사용자 정보를 조회합니다.
@@ -27,10 +31,18 @@ public class AdminService {
      */
     public synchronized AdminResponse getConfig(){
         String excelPath = excelUploadConfig.getUploadDir();
+        boolean fileExists = false;
+        if (!excelPath.isEmpty()) {
+            try {
+                fileExists = excelFileUtils.isExcelExists(excelPath);
+            } catch (IOException e) {
+                log.warn("대상자 명단 파일 상태 확인 실패: {}", excelPath, e);
+            }
+        }
         return AdminResponse.builder()
                 .userCount(userService.getUserCount())
                 .excelPath(excelPath.isEmpty() ? "설정된 경로가 없습니다" : excelPath)
-                .fileExists(excelPath.isEmpty() ? false : Files.exists(Path.of(excelPath))) // Path.of("")는 현재 디렉토리를 나타냄
+                .fileExists(fileExists)
                 .build();
     }
 

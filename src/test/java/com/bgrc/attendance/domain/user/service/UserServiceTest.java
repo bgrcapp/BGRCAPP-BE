@@ -44,6 +44,26 @@ class UserServiceTest {
         assertThat(userRepository.findByNameAndBirthDate("종결자", "")).isFalse();
     }
 
+    @Test
+    void formatsStringBirthDateCell() throws Exception {
+        ExcelUploadConfig excelUploadConfig = mock(ExcelUploadConfig.class);
+        ExcelFileUtils excelFileUtils = new ExcelFileUtils(excelUploadConfig);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Row row = workbook.createSheet("명단").createRow(0);
+            Cell compactCell = row.createCell(0);
+            compactCell.setCellValue("19900101");
+            Cell hyphenCell = row.createCell(1);
+            hyphenCell.setCellValue("1990-01-01");
+            Cell slashCell = row.createCell(2);
+            slashCell.setCellValue("1990/01/01");
+
+            assertThat(excelFileUtils.formatBirthDate(compactCell)).isEqualTo("1990-01-01");
+            assertThat(excelFileUtils.formatBirthDate(hyphenCell)).isEqualTo("1990-01-01");
+            assertThat(excelFileUtils.formatBirthDate(slashCell)).isEqualTo("1990-01-01");
+        }
+    }
+
     private void createWorkbook(Path excelFile) throws Exception {
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              OutputStream outputStream = Files.newOutputStream(excelFile)) {

@@ -43,10 +43,7 @@ public class QrService {
         Boolean isExists = userService.findUser(data.name(), data.birthDate());
         if (!isExists) throw new CustomException(ResponseCode.INVALID_USER_INFO);
 
-        // 중복 출석 확인
-        if (attendanceService.isAttended(data.name(), data.birthDate())) throw new CustomException(ResponseCode.ALREADY_CHECKED_IN);
-
-        // 출석 로그 파일 생성
+        // 출석 기록: 메모리 중복 확인과 Excel 반영을 하나의 synchronized 흐름으로 처리합니다.
         attendanceService.createLog(data.name(), data.birthDate());
 
         // 성공 응답을 위한 UserInfo 객체 생성
