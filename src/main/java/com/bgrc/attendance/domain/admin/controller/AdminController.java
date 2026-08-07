@@ -4,6 +4,7 @@ import com.bgrc.attendance.domain.admin.service.AdminService;
 import com.bgrc.attendance.domain.user.service.UserService;
 import com.bgrc.attendance.global.common.CommonResponse;
 import com.bgrc.attendance.domain.admin.dto.AdminResponse;
+import com.bgrc.attendance.domain.admin.dto.AttendanceStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,11 @@ public class AdminController {
     @GetMapping("/config")
     public AdminResponse getConfig(){
         return adminService.getConfig();
+    }
+
+    @GetMapping("/attendance/today")
+    public CommonResponse<AttendanceStatusResponse> getTodayAttendance() {
+        return CommonResponse.success(adminService.getTodayAttendance());
     }
 
     @PostMapping("/upload")

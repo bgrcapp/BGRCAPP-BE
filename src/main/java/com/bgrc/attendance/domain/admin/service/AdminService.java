@@ -3,8 +3,14 @@ package com.bgrc.attendance.domain.admin.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import com.bgrc.attendance.domain.user.config.ExcelUploadConfig;
+import com.bgrc.attendance.domain.admin.dto.AttendancePersonResponse;
+import com.bgrc.attendance.domain.admin.dto.AttendanceStatusResponse;
+import com.bgrc.attendance.domain.qr.service.AttendanceLogExcelService;
 import com.bgrc.attendance.global.util.ExcelFileUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +30,7 @@ public class AdminService {
     private final ExcelUploadConfig excelUploadConfig;
     private final UserService userService;
     private final ExcelFileUtils excelFileUtils;
+    private final AttendanceLogExcelService attendanceLogExcelService;
 
     /**
      * 현재 설정된 엑셀 경로와 사용자 정보를 조회합니다.
@@ -43,6 +50,27 @@ public class AdminService {
                 .userCount(userService.getUserCount())
                 .excelPath(excelPath.isEmpty() ? "설정된 경로가 없습니다" : excelPath)
                 .fileExists(fileExists)
+                .build();
+    }
+
+    public synchronized AttendanceStatusResponse getTodayAttendance() {
+        LocalDate today = LocalDate.now();
+        List<AttendancePersonResponse> people = attendanceLogExcelService.getTodayAttendance(today).stream()
+                .map(status -> AttendancePersonResponse.builder()
+                        .sheetName(status.target().sheetName())
+                        .serialNumber(status.target().serialNumber())
+                        .name(status.target().name())
+                        .attended(status.attended())
+                        .build())
+                .toList();
+        int checkedCount = (int) people.stream().filter(AttendancePersonResponse::getAttended).count();
+
+        return AttendanceStatusResponse.builder()
+                .date(today.format(DateTimeFormatter.ISO_LOCAL_DATE))
+                .totalCount(people.size())
+                .checkedCount(checkedCount)
+                .uncheckedCount(people.size() - checkedCount)
+                .people(people)
                 .build();
     }
 

@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -104,6 +105,21 @@ public class AttendanceLogExcelService {
         } catch (IOException e) {
             throw new CustomException(ResponseCode.ATTENDANCE_LOG_READ_FAILED);
         }
+    }
+
+    public synchronized List<AttendanceStatus> getTodayAttendance(LocalDate date) {
+        if (!Files.exists(getWorkbookPath())) {
+            throw new CustomException(ResponseCode.ATTENDANCE_LOG_FILE_NOT_FOUND);
+        }
+
+        Set<String> markedKeys = loadTodayMarkedKeys(date);
+        return targetsByName.values().stream()
+                .flatMap(List::stream)
+                .sorted(Comparator
+                        .comparing(AttendanceTarget::sheetName)
+                        .thenComparingInt(target -> serialSortValue(target.serialNumber())))
+                .map(target -> new AttendanceStatus(target, markedKeys.contains(target.key())))
+                .toList();
     }
 
     public synchronized Optional<AttendanceTarget> findUniqueTarget(String name) {
@@ -242,6 +258,14 @@ public class AttendanceLogExcelService {
         return value == null ? "" : value.strip();
     }
 
+    private int serialSortValue(String serialNumber) {
+        try {
+            return Integer.parseInt(serialNumber);
+        } catch (NumberFormatException ignored) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
     private List<String> getConfiguredSheetNames() {
         return List.of(attendanceLogConfig.getSheetNames().split(","))
                 .stream()
@@ -293,6 +317,9 @@ public class AttendanceLogExcelService {
         static MarkResult dateNotFound() {
             return new MarkResult(MarkStatus.DATE_NOT_FOUND, null);
         }
+    }
+
+    public record AttendanceStatus(AttendanceTarget target, boolean attended) {
     }
 
     private record Layout(int headerRowIndex, int serialNumberColumn, int nameColumn) {

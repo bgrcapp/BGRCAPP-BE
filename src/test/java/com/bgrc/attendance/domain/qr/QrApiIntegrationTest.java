@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -72,6 +73,16 @@ class QrApiIntegrationTest {
         String request = "{\"qrData\":\"%s/%s/%s\"}"
                 .formatted(TEST_NAME, TEST_BIRTH_DATE, TEST_ISSUER);
 
+        mockMvc.perform(get("/api/admin/attendance/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1002))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.date").value(TEST_DATE.toString()))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.checkedCount").value(0))
+                .andExpect(jsonPath("$.data.people[0].name").value(TEST_NAME))
+                .andExpect(jsonPath("$.data.people[0].attended").value(false));
+
         mockMvc.perform(post("/api/qr/scan")
                         .contentType(APPLICATION_JSON)
                         .content(request))
@@ -81,6 +92,13 @@ class QrApiIntegrationTest {
                 .andExpect(jsonPath("$.data.userInfo.name").value(TEST_NAME));
 
         assertThatAttendanceWasRecorded();
+
+        mockMvc.perform(get("/api/admin/attendance/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.checkedCount").value(1))
+                .andExpect(jsonPath("$.data.uncheckedCount").value(0))
+                .andExpect(jsonPath("$.data.people[0].attended").value(true));
 
         mockMvc.perform(post("/api/qr/scan")
                         .contentType(APPLICATION_JSON)

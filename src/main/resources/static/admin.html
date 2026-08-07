@@ -16,67 +16,115 @@
         <h1>관리자 설정 페이지</h1>
         <p class="subtitle">무료급식 출석 시스템</p>
 
-        <div class="card server-status-card" id="serverStatusCard" style="display: none;">
-            <div class="server-status-content">
-                <i class="fa-solid fa-circle-exclamation server-status-icon" id="serverStatusIcon"></i>
-                <div class="server-status-text">
-                    <h3 id="serverStatusTitle">서버가 현재 꺼져있습니다</h3>
-                    <p id="serverStatusMessage">서버를 실행한 후 새로고침 해주세요.</p>
+        <div class="admin-layout">
+            <section class="admin-left-panel" aria-label="기존 관리자 설정">
+                <div class="card server-status-card" id="serverStatusCard" style="display: none;">
+                    <div class="server-status-content">
+                        <i class="fa-solid fa-circle-exclamation server-status-icon" id="serverStatusIcon"></i>
+                        <div class="server-status-text">
+                            <h3 id="serverStatusTitle">서버가 현재 꺼져있습니다</h3>
+                            <p id="serverStatusMessage">서버를 실행한 후 새로고침 해주세요.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="card">
-            <div class="card-title"><i class="fa-solid fa-chart-pie"></i> 현재 상태</div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">등록 명단</div>
-                    <div class="info-value" id="userCount">-</div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-chart-pie"></i> 현재 상태</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">등록 명단</div>
+                            <div class="info-value" id="userCount">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">파일 상태</div>
+                            <div class="info-value" id="fileStatus">-</div>
+                        </div>
+                    </div>
+                    <div class="button-group" style="margin-top: 1.25rem;">
+                        <button class="btn-secondary" onclick="loadConfig()">
+                            <i class="fa-solid fa-rotate"></i> 새로고침
+                            <span id="refreshLoading" class="loading" style="display:none;"></span>
+                        </button>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">파일 상태</div>
-                    <div class="info-value" id="fileStatus">-</div>
+
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-file-excel"></i> 엑셀 파일 업로드</div>
+
+                    <div class="upload-area" id="uploadArea">
+                        <input
+                            type="file"
+                            id="excelFile"
+                            accept=".xlsx,.xls"
+                            style="display: none;"
+                        >
+                        <div class="upload-content">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <p class="upload-text">클릭하여 파일을 선택하거나 여기에 끌어다 놓으세요</p>
+                            <p class="upload-hint">엑셀 파일 (.xlsx, .xls)</p>
+                        </div>
+                        <div id="selectedFileName" class="selected-file"></div>
+                    </div>
+
+                    <button class="btn-primary" onclick="uploadFile()" style="width: 100%; margin-top: 1rem;">
+                        <i class="fa-solid fa-upload"></i> 업로드하기
+                        <span id="uploadLoading" class="loading" style="display:none;"></span>
+                    </button>
+
+                    <div id="statusMessage" class="status"></div>
                 </div>
-            </div>
-            <div class="button-group" style="margin-top: 1.25rem;">
-                <button class="btn-secondary" onclick="loadConfig()">
-                    <i class="fa-solid fa-rotate"></i> 새로고침
-                    <span id="refreshLoading" class="loading" style="display:none;"></span>
-                </button>
-            </div>
-        </div>
 
-        <div class="card">
-            <div class="card-title"><i class="fa-solid fa-file-excel"></i> 엑셀 파일 업로드</div>
-            
-            <div class="upload-area" id="uploadArea">
-                <input 
-                    type="file" 
-                    id="excelFile" 
-                    accept=".xlsx,.xls"
-                    style="display: none;"
-                >
-                <div class="upload-content">
-                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-                    <p class="upload-text">클릭하여 파일을 선택하거나 여기에 끌어다 놓으세요</p>
-                    <p class="upload-hint">엑셀 파일 (.xlsx, .xls)</p>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-folder-open"></i> 설정된 명단 경로</div>
+                    <p id="currentPath" style="color: #666; font-size: 14px; word-break: break-all;">
+                        로딩 중...
+                    </p>
                 </div>
-                <div id="selectedFileName" class="selected-file"></div>
-            </div>
+            </section>
 
-            <button class="btn-primary" onclick="uploadFile()" style="width: 100%; margin-top: 1rem;">
-                <i class="fa-solid fa-upload"></i> 업로드하기
-                <span id="uploadLoading" class="loading" style="display:none;"></span>
-            </button>
+            <section class="card attendance-panel" aria-labelledby="attendancePanelTitle">
+                <div class="attendance-panel-header">
+                    <div>
+                        <div class="card-title" id="attendancePanelTitle">
+                            <i class="fa-solid fa-clipboard-check"></i> 오늘 출석체크 현황
+                        </div>
+                        <p class="attendance-date" id="attendanceDate">기준일을 불러오는 중...</p>
+                    </div>
+                    <span class="attendance-source-badge" id="attendanceDataSource">출석 일지 Excel</span>
+                </div>
 
-            <div id="statusMessage" class="status"></div>
-        </div>
+                <div class="attendance-summary-grid" aria-label="오늘 출석 요약">
+                    <div class="attendance-summary-item">
+                        <span>전체 명단</span>
+                        <strong id="attendanceTotal">0</strong>
+                    </div>
+                    <div class="attendance-summary-item is-checked">
+                        <span>출석 완료</span>
+                        <strong id="attendanceChecked">0</strong>
+                    </div>
+                    <div class="attendance-summary-item is-unchecked">
+                        <span>미출석</span>
+                        <strong id="attendanceUnchecked">0</strong>
+                    </div>
+                </div>
 
-        <div class="card">
-            <div class="card-title"><i class="fa-solid fa-folder-open"></i> 설정된 명단 경로</div>
-            <p id="currentPath" style="color: #666; font-size: 14px; word-break: break-all;">
-                로딩 중...
-            </p>
+                <div class="attendance-progress" aria-label="출석 진행률">
+                    <div class="attendance-progress-bar" id="attendanceProgressBar"></div>
+                </div>
+
+                <div class="attendance-list-header">
+                    <div>
+                        <strong>대상자 명단</strong>
+                        <span class="attendance-list-count" id="attendanceListCount">0명 표시</span>
+                    </div>
+                    <label class="attendance-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input id="attendanceSearch" type="search" placeholder="이름 검색" aria-label="출석 대상자 이름 검색">
+                    </label>
+                </div>
+
+                <div class="attendance-list" id="attendanceList" aria-live="polite"></div>
+            </section>
         </div>
     </div>
 

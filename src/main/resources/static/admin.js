@@ -1,7 +1,103 @@
-// 페이지 로드 시 자동으로 현재 설정 불러오기
+let attendanceStatusData = {
+    date: '',
+    totalCount: 0,
+    checkedCount: 0,
+    uncheckedCount: 0,
+    people: []
+};
+
+// 페이지 로드 시 자동으로 현재 설정과 Excel 기반 출석 현황 불러오기
 window.onload = function() {
     loadConfig();
 };
+
+function formatAttendanceDate(date) {
+    if (!date) return '기준일을 확인할 수 없습니다.';
+    const [year, month, day] = date.split('-');
+    return `${year}년 ${Number(month)}월 ${Number(day)}일`;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function renderAttendanceStatus(searchText = '') {
+    const roster = attendanceStatusData.people || [];
+    const filteredRoster = roster.filter(person => person.name.includes(searchText.trim()));
+    const totalCount = attendanceStatusData.totalCount || 0;
+    const checkedCount = attendanceStatusData.checkedCount || 0;
+    const progress = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
+
+    document.getElementById('attendanceDate').textContent =
+        `${formatAttendanceDate(attendanceStatusData.date)} · 출석 일지 기준`;
+    document.getElementById('attendanceTotal').textContent = totalCount;
+    document.getElementById('attendanceChecked').textContent = checkedCount;
+    document.getElementById('attendanceUnchecked').textContent = attendanceStatusData.uncheckedCount || 0;
+    document.getElementById('attendanceProgressBar').style.width = `${progress}%`;
+    document.getElementById('attendanceListCount').textContent =
+        `${filteredRoster.length}/${totalCount}명 표시`;
+
+    const listElement = document.getElementById('attendanceList');
+    if (filteredRoster.length === 0) {
+        listElement.innerHTML = '<div class="attendance-empty">검색 결과가 없습니다.</div>';
+        return;
+    }
+
+    listElement.innerHTML = filteredRoster.map(person => {
+        const statusClass = person.attended ? 'is-checked' : 'is-unchecked';
+        const statusText = person.attended ? '출석 완료' : '미출석';
+        const statusIcon = person.attended ? 'fa-circle-check' : 'fa-circle-minus';
+        const meta = `${person.sheetName} · 연번 ${person.serialNumber}`;
+
+        return `
+            <div class="attendance-person-row">
+                <div class="attendance-person-index">${escapeHtml(person.serial)}</div>
+                <div class="attendance-person-info">
+                    <div class="attendance-person-name">${escapeHtml(person.name)}</div>
+                    <div class="attendance-person-meta">${escapeHtml(meta)}</div>
+                </div>
+                <span class="attendance-badge ${statusClass}">
+                    <i class="fa-solid ${statusIcon}" aria-hidden="true"></i> ${statusText}
+                </span>
+            </div>
+        `;
+    }).join('');
+}
+
+function showAttendanceEmpty(message, source = '출석 일지 Excel') {
+    attendanceStatusData = {
+        date: '',
+        totalCount: 0,
+        checkedCount: 0,
+        uncheckedCount: 0,
+        people: []
+    };
+    document.getElementById('attendanceDataSource').textContent = source;
+    renderAttendanceStatus();
+    document.getElementById('attendanceDate').textContent = message;
+}
+
+async function loadAttendanceStatus() {
+    try {
+        const response = await fetch('/api/admin/attendance/today');
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || `출석 현황을 불러올 수 없습니다 (HTTP ${response.status})`);
+        }
+
+        attendanceStatusData = result.data;
+        document.getElementById('attendanceDataSource').textContent = '출석 일지 Excel';
+        renderAttendanceStatus(document.getElementById('attendanceSearch').value);
+    } catch (error) {
+        console.error('출석 현황 로드 실패:', error);
+        showAttendanceEmpty(error.message, 'Excel 조회 실패');
+    }
+}
 
 // 현재 설정 불러오기
 async function loadConfig() {
@@ -29,6 +125,7 @@ async function loadConfig() {
             document.getElementById('currentPath').textContent = '-';
             document.getElementById('userCount').textContent = '-';
             document.getElementById('fileStatus').textContent = '-';
+            showAttendanceEmpty('서버가 실행되지 않았습니다.', '서버 연결 대기');
             return;
         }
         
@@ -61,12 +158,15 @@ async function loadConfig() {
             ? '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i>' 
             : '<i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i>';
         document.getElementById('fileStatus').innerHTML = statusIcon;
+
+        await loadAttendanceStatus();
         
         showStatus('<i class="fa-solid fa-circle-check"></i> 완료 : 설정을 불러왔습니다', 'success');
         
     } catch (error) {
         // 네트워크 에러나 기타 오류 - 서버 상태 카드는 표시하지 않음 (이미 위에서 처리됨)
         console.error('설정 로드 실패:', error);
+        showAttendanceEmpty('출석 현황을 불러오지 못했습니다.', '조회 실패');
         showStatus('<i class="fa-solid fa-circle-xmark"></i> 오류 : ' + error.message, 'error');
     } finally {
         // 로딩 숨김
@@ -95,6 +195,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('excelFile');
     const selectedFileName = document.getElementById('selectedFileName');
+    const attendanceSearch = document.getElementById('attendanceSearch');
+
+    attendanceSearch.addEventListener('input', function(event) {
+        renderAttendanceStatus(event.target.value);
+    });
 
     // 클릭으로 파일 선택
     uploadArea.addEventListener('click', function() {
