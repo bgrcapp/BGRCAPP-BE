@@ -6,7 +6,11 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class User {
+    private String serialNumber;
     private String name;
     private String birthDate;
-    // 향후 확장성을 고려하여 User를 객체로 추상화
+
+    public User(String name, String birthDate) {
+        this("", name, birthDate);
+    }
 }

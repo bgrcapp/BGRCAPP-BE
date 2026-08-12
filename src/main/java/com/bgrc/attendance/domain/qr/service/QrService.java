@@ -6,6 +6,7 @@ import com.bgrc.attendance.global.common.ResponseCode;
 import com.bgrc.attendance.domain.qr.dto.QrScanRequest;
 import com.bgrc.attendance.domain.qr.dto.QrScanResponse;
 import com.bgrc.attendance.domain.user.dto.UserInfo;
+import com.bgrc.attendance.domain.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class QrService {
      * @return 승인 결과 ({@code Success}, {@code Message}, {@code UserInfo}) 반환
      */
     public QrScanResponse scan(QrScanRequest request) {
+        long startedAt = System.nanoTime();
         ParsedQrData data = parseQr(request.getQrData());
         log.info("출석 요청 : {}", request.getQrData());
         log.info("요청일시 : {}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
@@ -40,11 +42,11 @@ public class QrService {
         if (!VALID_ISSUER.equals(data.issuer())) throw new CustomException(ResponseCode.INVALID_ISSUER);
 
         // 명단 내 존재 여부 확인
-        Boolean isExists = userService.findUser(data.name(), data.birthDate());
-        if (!isExists) throw new CustomException(ResponseCode.INVALID_USER_INFO);
+        User user = userService.findRegisteredUser(data.name(), data.birthDate())
+                .orElseThrow(() -> new CustomException(ResponseCode.INVALID_USER_INFO));
 
         // 출석 기록: 메모리 중복 확인과 Excel 반영을 하나의 synchronized 흐름으로 처리합니다.
-        attendanceService.createLog(data.name(), data.birthDate());
+        attendanceService.createLog(user);
 
         // 성공 응답을 위한 UserInfo 객체 생성
         UserInfo userInfo = UserInfo.builder()
@@ -53,7 +55,8 @@ public class QrService {
                 .inRegistry(true)
                 .build();
 
-        log.info("서버 응답 : 출석 체크가 완료되었습니다.");
+        log.info("서버 응답 : 출석 체크가 완료되었습니다. 전체 처리 시간: {} ms",
+                (System.nanoTime() - startedAt) / 1_000_000);
 
         return QrScanResponse.builder()
                 .userInfo(userInfo)

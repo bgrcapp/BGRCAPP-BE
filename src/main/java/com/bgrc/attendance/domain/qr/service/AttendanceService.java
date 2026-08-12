@@ -1,70 +1,35 @@
 package com.bgrc.attendance.domain.qr.service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import com.bgrc.attendance.global.common.CustomException;
 import com.bgrc.attendance.global.common.ResponseCode;
-import org.springframework.beans.factory.annotation.Value;
+import com.bgrc.attendance.domain.user.model.User;
+import com.bgrc.attendance.domain.user.service.UserService;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor // final 필드만 주입
-@Slf4j // 로깅 사용
+@RequiredArgsConstructor
+@Slf4j
 public class AttendanceService {
     private final AttendanceLogExcelService attendanceLogExcelService;
-
-    @Value("${attendance.log.dir}")
-    private String attendanceDir;
+    private final MonthlyAttendanceLedgerService monthlyAttendanceLedgerService;
+    private final UserService userService;
 
     private final Set<String> attendedToday = new HashSet<>();
-    private final List<String> confirmationRecords = new ArrayList<>();
     private LocalDate loadedDate;
 
-    /**
-     * 출석 로그 디렉토리 생성
-     */
-    @PostConstruct // 빈 생성 직후 자동 실행
+    /** 서버 시작 시 오늘 생성된 월별 일지에서 출석 상태를 불러온다. */
+    @PostConstruct
     public synchronized void init(){
-        Path dirPath = Path.of(attendanceDir);
-        if (!Files.exists(dirPath)){
-            try {
-                Files.createDirectories(dirPath);
-                log.info("출석 디렉토리 생성: {}", dirPath.toAbsolutePath());
-            } catch (IOException e) {
-                log.error("출석 디렉토리 생성 실패: {}", e.getMessage());
-            }
-        }
-
         loadTodayState();
-    }
-
-    /**
-     * 오늘 날짜의 로그 파일 경로를 반환합니다. <br>
-     * 파일명도 포함해서 반환합니다. <br>
-     * (ex : C:/Users/무료급식 일일 식사내역_2026-01-30.txt)
-     * @return
-     */
-    private Path getLogPath(LocalDate date){
-        String date2str = date.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"));
-        String logFile = "무료급식 일일 식사내역_%s.txt".formatted(date2str);
-        Path logFilePath = Path.of(attendanceDir, logFile);
-
-        return logFilePath;
     }
 
     /**
@@ -76,20 +41,16 @@ public class AttendanceService {
      */
     public synchronized boolean isAttended(String name, String birthDate) {
         ensureTodayState();
+        attendanceLogExcelService.ensureInitialized(loadedDate);
         return attendanceLogExcelService.findUniqueTarget(name)
                 .map(target -> attendedToday.contains(target.key()))
                 .orElse(false);
     }
 
-    /**
-     * 출석 로그 파일을 생성하는 로직입니다. <br>
-     * 실제로는 프론트에서 스캔 후 3~5초 동안 새로운 스캔을 할 수 없지만,
-     * 혹시 모를 상황을 대비해서 {@code synchronized}를 추가하여 lock 영역으로 할당하였습니다.
-     * @param name
-     * @param birthDate
-     */
+    /** QR 출석을 오늘의 월별 일지에 기록한다. */
     public synchronized void createLog(String name, String birthDate){
         ensureTodayState();
+        attendanceLogExcelService.ensureInitialized(loadedDate);
 
         Optional<AttendanceLogExcelService.AttendanceTarget> target =
                 attendanceLogExcelService.findUniqueTarget(name);
@@ -110,11 +71,42 @@ public class AttendanceService {
             }
             case TARGET_NOT_FOUND -> throw new CustomException(ResponseCode.ATTENDANCE_LOG_TARGET_NOT_FOUND);
             case DATE_NOT_FOUND -> throw new CustomException(ResponseCode.ATTENDANCE_LOG_DATE_NOT_FOUND);
-            case RECORDED -> {
-                attendedToday.add(result.target().key());
-                appendConfirmationLog(name, birthDate);
-            }
+            case RECORDED -> attendedToday.add(result.target().key());
         }
+    }
+
+    /** QR 원본 명단의 연번·이름으로 월별 일지 행을 정확히 찾아 출석을 기록한다. */
+    public synchronized void createLog(User user) {
+        long startedAt = System.nanoTime();
+        try {
+            ensureTodayState();
+            attendanceLogExcelService.ensureInitialized(loadedDate);
+
+            Optional<AttendanceLogExcelService.AttendanceTarget> target = attendanceLogExcelService.findTarget(user);
+            if (target.isEmpty()) {
+                throw new CustomException(ResponseCode.ATTENDANCE_LOG_TARGET_NOT_FOUND);
+            }
+            if (attendedToday.contains(target.get().key())) {
+                throw new CustomException(ResponseCode.ALREADY_CHECKED_IN);
+            }
+
+            AttendanceLogExcelService.MarkResult result = attendanceLogExcelService.markAttendance(user, loadedDate);
+            switch (result.status()) {
+                case ALREADY_MARKED -> {
+                    attendedToday.add(result.target().key());
+                    throw new CustomException(ResponseCode.ALREADY_CHECKED_IN);
+                }
+                case TARGET_NOT_FOUND -> throw new CustomException(ResponseCode.ATTENDANCE_LOG_TARGET_NOT_FOUND);
+                case DATE_NOT_FOUND -> throw new CustomException(ResponseCode.ATTENDANCE_LOG_DATE_NOT_FOUND);
+                case RECORDED -> attendedToday.add(result.target().key());
+            }
+        } finally {
+            log.info("QR 출석 일지 처리 시간: {} ms ({})", elapsedMillis(startedAt), user.getName());
+        }
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
     private void ensureTodayState() {
@@ -125,62 +117,36 @@ public class AttendanceService {
     private void loadTodayState() {
         loadedDate = LocalDate.now();
         attendedToday.clear();
-        confirmationRecords.clear();
 
-        attendanceLogExcelService.initialize();
+        // 서버 재시작·명단 교체 직후에도 기존 체크(o)는 보존하면서 현재 명단과 일지를 다시 맞춘다.
+        monthlyAttendanceLedgerService.synchronizeCurrentMonth(loadedDate, userService.getUsers());
+        attendanceLogExcelService.initialize(loadedDate);
         attendedToday.addAll(attendanceLogExcelService.loadTodayMarkedKeys(loadedDate));
-        loadConfirmationLog();
     }
 
-    /**
-     * 서버 시작 시에만 확인용 txt 로그를 읽어 메모리 상태를 보강합니다.
-     * 정상적인 QR 처리 중에는 txt 파일을 읽지 않습니다.
-     */
-    private void loadConfirmationLog() {
-        Path logPath = getLogPath(loadedDate);
-        if (!Files.exists(logPath)) return;
+    /** 명단 교체 직후 현재 월 일지와 메모리 출석 상태를 다시 맞춘다. */
+    public synchronized void reloadCurrentDate() {
+        loadTodayState();
+    }
 
-        try {
-            List<String> content = Files.readAllLines(logPath);
-            for (int i = 1; i < content.size(); i++) {
-                String record = content.get(i).trim();
-                if (record.isBlank()) continue;
-                confirmationRecords.add(record);
+    /** 관리자 화면의 수동 출석/결석 변경도 Excel과 오늘의 메모리 상태에 함께 반영한다. */
+    public synchronized boolean toggleAttendance(User user, LocalDate date) {
+        if (date.equals(LocalDate.now())) ensureTodayState();
 
-                String[] data = record.split("/", 3);
-                if (data.length < 2) continue;
-                attendanceLogExcelService.findUniqueTarget(data[0])
-                        .ifPresent(target -> attendedToday.add(target.key()));
+        monthlyAttendanceLedgerService.ensureLedger(date, userService.getUsers());
+        attendanceLogExcelService.ensureInitialized(date);
+        boolean attended = attendanceLogExcelService.toggleAttendance(user, date);
+
+        if (date.equals(loadedDate)) {
+            AttendanceLogExcelService.AttendanceTarget target = attendanceLogExcelService.findTarget(user)
+                    .orElseThrow(() -> new CustomException(ResponseCode.ATTENDANCE_LOG_TARGET_NOT_FOUND));
+            if (attended) {
+                attendedToday.add(target.key());
+            } else {
+                attendedToday.remove(target.key());
             }
-        } catch (IOException e) {
-            log.warn("확인용 출석 로그 복구 실패: {}", logPath, e);
         }
+        return attended;
     }
 
-    private void appendConfirmationLog(String name, String birthDate) {
-        String record = String.format("%s/%s/%s",
-                name,
-                birthDate,
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-        confirmationRecords.add(record);
-        writeConfirmationLog(loadedDate);
-    }
-
-    @PreDestroy
-    public synchronized void shutdown() {
-        if (loadedDate != null) writeConfirmationLog(loadedDate);
-    }
-
-    private void writeConfirmationLog(LocalDate date) {
-        List<String> output = new ArrayList<>();
-        output.add(String.format("[출석 인원 : %d]", attendedToday.size()));
-        output.addAll(confirmationRecords);
-
-        try {
-            Files.write(getLogPath(date), output);
-        } catch (IOException e) {
-            // txt는 확인용 보조 로그이므로 Excel 출석 저장 결과를 실패로 되돌리지 않습니다.
-            log.warn("확인용 출석 로그 저장 실패: {}", getLogPath(date), e);
-        }
-    }
 }

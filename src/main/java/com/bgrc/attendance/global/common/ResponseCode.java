@@ -43,6 +43,8 @@ public enum ResponseCode {
                 "관리자 페이지에서 명단을 업로드 해주세요."),
         EXCEL_SAVE_FAILED(3304, false, "엑셀 파일 저장에 실패했습니다."),
         EXCEL_READ_FAILED(3305, false, "엑셀 파일 읽기에 실패했습니다."),
+        EXCEL_FILE_IN_USE(3306, false, "기존 명단 파일이 열려 있거나 사용 중입니다. Excel을 닫고 다시 시도해주세요."),
+        EXCEL_SAVE_ACCESS_DENIED(3307, false, "명단 저장 권한이 없습니다. 서버 실행 폴더의 data\\userlist 폴더 권한을 확인해주세요."),
     /*
         9000~ : 서버 관련 오류
     */

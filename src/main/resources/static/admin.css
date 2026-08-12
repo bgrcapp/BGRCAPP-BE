@@ -108,9 +108,29 @@ h1 {
 
 .subtitle {
     color: #666;
-    margin-bottom: 1.875rem;
+    margin-bottom: 0.7rem;
     text-align: center;
     font-size: 16px;
+}
+
+.usage-guide-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: fit-content;
+    margin: 0 auto 1.875rem;
+    color: #4355a8;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.usage-guide-link:hover,
+.usage-guide-link:focus-visible {
+    color: #293a8d;
+    text-decoration: underline;
+    text-underline-offset: 0.18rem;
 }
 
 .admin-layout {
@@ -157,14 +177,69 @@ h1 {
     font-size: 0.85rem;
 }
 
-.attendance-source-badge {
-    flex-shrink: 0;
-    padding: 0.35rem 0.55rem;
-    border-radius: 999px;
-    background: #ecfdf3;
-    color: #027a48;
-    font-size: 0.7rem;
+.attendance-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.attendance-date-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    color: #667085;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.attendance-date-selector input {
+    width: 8.5rem;
+    padding: 0.34rem 0.42rem;
+    border: 0.0625rem solid #d0d5dd;
+    border-radius: 0.35rem;
+    background: #fff;
+    color: #344054;
+    font: inherit;
+}
+
+.attendance-date-load {
+    border: 0;
+    border-radius: 0.35rem;
+    padding: 0.36rem 0.55rem;
+    background: #667eea;
+    color: #fff;
+    font: inherit;
+    font-size: 0.72rem;
     font-weight: 700;
+    cursor: pointer;
+}
+
+.attendance-date-load:hover {
+    background: #5268cf;
+}
+
+.attendance-export {
+    border: 0;
+    border-radius: 0.35rem;
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    background: #087f5b;
+    color: #fff;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.attendance-export:hover {
+    background: #056c4d;
+}
+
+.attendance-export-area {
+    margin-top: 1rem;
 }
 
 .attendance-summary-grid {
@@ -277,19 +352,6 @@ h1 {
     background: #fff;
 }
 
-.attendance-person-index {
-    display: grid;
-    place-items: center;
-    width: 1.8rem;
-    height: 1.8rem;
-    flex-shrink: 0;
-    border-radius: 0.4rem;
-    background: #eef2ff;
-    color: #667eea;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
 .attendance-person-info {
     min-width: 0;
     flex: 1;
@@ -304,21 +366,43 @@ h1 {
     white-space: nowrap;
 }
 
-.attendance-person-meta {
-    overflow: hidden;
-    margin-top: 0.15rem;
-    color: #98a2b3;
-    font-size: 0.7rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .attendance-badge {
     flex-shrink: 0;
     padding: 0.3rem 0.5rem;
     border-radius: 999px;
     font-size: 0.7rem;
     font-weight: 700;
+}
+
+.attendance-toggle {
+    /* 공통 button의 flex: 1을 덮어써 상태 버튼이 행 전체를 차지하지 않게 한다. */
+    flex: 0 0 4.25rem;
+    width: 4.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.16rem;
+    padding: 0.34rem 0.2rem;
+    border: 0;
+    cursor: pointer;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.attendance-toggle:hover {
+    filter: brightness(0.96);
+}
+
+.attendance-toggle:focus-visible {
+    outline: 0.125rem solid #2e90fa;
+    outline-offset: 0.125rem;
+}
+
+.attendance-toggle:disabled {
+    cursor: wait;
+    opacity: 0.65;
 }
 
 .attendance-badge.is-checked {
@@ -466,6 +550,13 @@ input[type="text"]:focus {
     color: #999;
 }
 
+.upload-description {
+    margin: -0.15rem 0 0.9rem;
+    color: #667085;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
 .selected-file {
     margin-top: 1rem;
     padding: 0.75rem;
@@ -540,6 +631,13 @@ button {
     background: #f8d7da;
     color: #721c24;
     border: 0.063rem solid #f5c6cb;
+    display: block;
+}
+
+.status.info {
+    background: #e8f0fe;
+    color: #1d4ed8;
+    border: 0.063rem solid #bfdbfe;
     display: block;
 }
 
@@ -619,6 +717,10 @@ button {
     .attendance-list-header {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .attendance-header-actions {
+        justify-content: flex-start;
     }
 
     .attendance-search {

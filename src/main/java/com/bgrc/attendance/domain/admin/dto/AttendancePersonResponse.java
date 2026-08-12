@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AttendancePersonResponse {
-    private String sheetName;
     private String serialNumber;
     private String name;
     private Boolean attended;

@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:./data/config/attendance-secrets.yml,optional:file:../../data/config/attendance-secrets.yml
   application:
     name: attendance
   devtools:
@@ -19,9 +21,18 @@ file:
 attendance:
   log:
     dir: ./data/attendance
-    excel: ./data/attendance/무료급식 일일 식사내역_26.8_일지.xlsx
+    template: classpath:attendance-template.xlsx
+    # 연·월은 파일명(예: 26.8)으로 구분한다. 별도 monthly 하위 폴더는 사용하지 않는다.
+    monthly-dir: ./data/attendance
     sheets: 내역1,내역2
+  holiday-api:
+    # 공공데이터포털 특일 정보 API 인증키는 운영 환경 변수 KOREAN_HOLIDAY_API_KEY로 주입한다.
+    service-key: ${KOREAN_HOLIDAY_API_KEY:}
+    cache-dir: ./data/attendance/holidays
 
 logging:
+  file:
+    # Windows 운영 중 파일 저장 실패 원인을 콘솔 종료 후에도 확인할 수 있게 남긴다.
+    name: ./data/logs/attendance.log
   level:
     com.bgrc.attendance: info

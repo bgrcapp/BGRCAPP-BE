@@ -1,6 +1,7 @@
 package com.bgrc.attendance.domain.qr.service;
 
 import com.bgrc.attendance.domain.qr.config.AttendanceLogConfig;
+import com.bgrc.attendance.global.util.RuntimeDataPathResolver;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -28,11 +29,9 @@ class AttendanceLogExcelServiceTest {
         LocalDate date = LocalDate.of(2026, 8, 7);
         Path workbookPath = createWorkbook(date);
 
-        AttendanceLogConfig config = mock(AttendanceLogConfig.class);
-        when(config.getExcelPath()).thenReturn(workbookPath.toString());
-        when(config.getSheetNames()).thenReturn("내역1,내역2");
+        AttendanceLogConfig config = monthlyLedgerConfig("내역1,내역2");
 
-        AttendanceLogExcelService service = new AttendanceLogExcelService(config);
+        AttendanceLogExcelService service = new AttendanceLogExcelService(config, new RuntimeDataPathResolver());
         service.initialize();
 
         AttendanceLogExcelService.MarkResult result = service.markAttendance("김철수", date);
@@ -59,11 +58,9 @@ class AttendanceLogExcelServiceTest {
             }
         }
 
-        AttendanceLogConfig config = mock(AttendanceLogConfig.class);
-        when(config.getExcelPath()).thenReturn(workbookPath.toString());
-        when(config.getSheetNames()).thenReturn("내역1,내역2");
+        AttendanceLogConfig config = monthlyLedgerConfig("내역1,내역2");
 
-        AttendanceLogExcelService service = new AttendanceLogExcelService(config);
+        AttendanceLogExcelService service = new AttendanceLogExcelService(config, new RuntimeDataPathResolver());
         service.initialize();
 
         AttendanceLogExcelService.MarkResult result = service.markAttendance("홍길동", date);
@@ -72,8 +69,37 @@ class AttendanceLogExcelServiceTest {
         assertThat(service.loadTodayMarkedKeys(date)).containsExactly("내역1:1");
     }
 
+    @Test
+    void findsTheDateColumnWhenTheLedgerHeaderUsesDisplayedText() throws Exception {
+        LocalDate date = LocalDate.of(2026, 8, 10);
+        Path workbookPath = monthlyWorkbookPath(date);
+        Files.createDirectories(workbookPath.getParent());
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             OutputStream outputStream = Files.newOutputStream(workbookPath)) {
+            Sheet sheet = workbook.createSheet("내역1");
+            Row header = sheet.createRow(1);
+            header.createCell(1).setCellValue("연번");
+            header.createCell(2).setCellValue("성명");
+            header.createCell(4).setCellValue("8/10");
+
+            Row data = sheet.createRow(2);
+            data.createCell(1).setCellValue(1);
+            data.createCell(2).setCellValue("홍길동");
+            data.createCell(4);
+            workbook.write(outputStream);
+        }
+
+        AttendanceLogConfig config = monthlyLedgerConfig("내역1");
+        AttendanceLogExcelService service = new AttendanceLogExcelService(config, new RuntimeDataPathResolver());
+        service.initialize();
+
+        assertThat(service.markAttendance("홍길동", date).status())
+                .isEqualTo(AttendanceLogExcelService.MarkStatus.RECORDED);
+    }
+
     private Path createWorkbook(LocalDate date) throws Exception {
-        Path workbookPath = tempDirectory.resolve("attendance.xlsx");
+        Path workbookPath = monthlyWorkbookPath(date);
+        Files.createDirectories(workbookPath.getParent());
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              OutputStream outputStream = Files.newOutputStream(workbookPath)) {
             CellStyle dateStyle = workbook.createCellStyle();
@@ -84,6 +110,20 @@ class AttendanceLogExcelServiceTest {
             workbook.write(outputStream);
         }
         return workbookPath;
+    }
+
+    private AttendanceLogConfig monthlyLedgerConfig(String sheetNames) {
+        AttendanceLogConfig config = mock(AttendanceLogConfig.class);
+        when(config.getMonthlyDir()).thenReturn(tempDirectory.resolve("monthly").toString());
+        when(config.getLogDir()).thenReturn(tempDirectory.toString());
+        when(config.getSheetNames()).thenReturn(sheetNames);
+        return config;
+    }
+
+    private Path monthlyWorkbookPath(LocalDate date) {
+        return tempDirectory.resolve("monthly")
+                .resolve("무료급식 일일 식사내역_%02d.%d_일지.xlsx"
+                        .formatted(date.getYear() % 100, date.getMonthValue()));
     }
 
     private void createSheet(XSSFWorkbook workbook,

@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
@@ -20,15 +21,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -42,6 +47,8 @@ class QrApiIntegrationTest {
     private static Path testDirectory;
     private static Path rosterDirectory;
     private static Path attendanceDirectory;
+    private static Path monthlyDirectory;
+    private static Path attendanceTemplate;
     private static Path attendanceWorkbook;
 
     @Autowired
@@ -49,6 +56,19 @@ class QrApiIntegrationTest {
 
     @Autowired
     private AttendanceService attendanceService;
+
+    @Test
+    void rootForwardsToTheAdminPage() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/admin.html"));
+    }
+
+    @Test
+    void faviconFallbackDoesNotReturnAnInternalServerError() throws Exception {
+        mockMvc.perform(get("/favicon.ico"))
+                .andExpect(status().isNoContent());
+    }
 
     @AfterAll
     static void removeTestEnvironment() throws IOException {
@@ -64,16 +84,29 @@ class QrApiIntegrationTest {
         ensureTestEnvironment();
         registry.add("file.upload.dir", () -> rosterDirectory.toString());
         registry.add("attendance.log.dir", () -> attendanceDirectory.toString());
-        registry.add("attendance.log.excel", () -> attendanceWorkbook.toString());
+        registry.add("attendance.log.template", () -> attendanceTemplate.toString());
+        registry.add("attendance.log.monthly-dir", () -> monthlyDirectory.toString());
         registry.add("attendance.log.sheets", () -> "내역1,내역2");
     }
 
     @Test
-    void scanApiRecordsExcelRejectsDuplicateAndRecoversAfterRestart() throws Exception {
+    void scanApiRecordsGeneratedMonthlyLedgerRejectsDuplicateAndRecoversAfterRestart() throws Exception {
         String request = "{\"qrData\":\"%s/%s/%s\"}"
                 .formatted(TEST_NAME, TEST_BIRTH_DATE, TEST_ISSUER);
 
-        mockMvc.perform(get("/api/admin/attendance/today"))
+        MockMultipartFile roster = new MockMultipartFile(
+                "file",
+                "today-roster.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                Files.readAllBytes(rosterDirectory.resolve("roster.xlsx")));
+        mockMvc.perform(multipart("/api/admin/roster").file(roster))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1001))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.userCount").value(1))
+                .andExpect(jsonPath("$.data.rosterFileName").value("attendance-roster.xlsx"));
+
+        mockMvc.perform(get("/api/admin/attendance").param("date", TEST_DATE.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1002))
                 .andExpect(jsonPath("$.success").value(true))
@@ -93,12 +126,46 @@ class QrApiIntegrationTest {
 
         assertThatAttendanceWasRecorded();
 
-        mockMvc.perform(get("/api/admin/attendance/today"))
+        mockMvc.perform(get("/api/admin/attendance").param("date", TEST_DATE.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalCount").value(1))
                 .andExpect(jsonPath("$.data.checkedCount").value(1))
                 .andExpect(jsonPath("$.data.uncheckedCount").value(0))
+                .andExpect(jsonPath("$.data.people[0].serialNumber").value("1"))
                 .andExpect(jsonPath("$.data.people[0].attended").value(true));
+
+        // 관리자 화면에서는 출석/결석 배지를 눌러 Excel의 o를 즉시 반대로 바꿀 수 있다.
+        mockMvc.perform(post("/api/admin/attendance/toggle")
+                        .param("date", TEST_DATE.toString())
+                        .param("serialNumber", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1002))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.checkedCount").value(0))
+                .andExpect(jsonPath("$.data.people[0].attended").value(false));
+        assertThatAttendanceWasCleared();
+
+        // 오늘 출석을 결석으로 되돌리면 서버 메모리에서도 즉시 해제되어 QR 재출석이 가능하다.
+        mockMvc.perform(post("/api/qr/scan")
+                        .contentType(APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1000))
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/admin/attendance/export").param("date", TEST_DATE.toString()))
+                .andExpect(status().isOk())
+                .andExpect(header().string(CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("attachment")))
+                .andExpect(header().string(CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString(".xlsx")))
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .andExpect(content().bytes(Files.readAllBytes(attendanceWorkbook)));
+
+        mockMvc.perform(get("/api/admin/attendance").param("date", TEST_DATE.minusDays(1).toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.date").value(TEST_DATE.minusDays(1).toString()))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.checkedCount").value(0))
+                .andExpect(jsonPath("$.data.people[0].attended").value(false));
 
         mockMvc.perform(post("/api/qr/scan")
                         .contentType(APPLICATION_JSON)
@@ -108,8 +175,7 @@ class QrApiIntegrationTest {
                 .andExpect(jsonPath("$.success").value(false));
 
         // 서버 재시작과 동일하게 메모리를 다시 초기화해도 기존 출석이 중복으로 차단되는지 확인합니다.
-        attendanceService.shutdown();
-        attendanceService.init();
+        attendanceService.reloadCurrentDate();
 
         mockMvc.perform(post("/api/qr/scan")
                         .contentType(APPLICATION_JSON)
@@ -121,17 +187,38 @@ class QrApiIntegrationTest {
 
     private void assertThatAttendanceWasRecorded() throws IOException {
         try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(attendanceWorkbook))) {
-            assertThat(workbook.getSheet("내역1").getRow(2).getCell(4).getStringCellValue())
+            Sheet sheet = workbook.getSheet("내역1");
+            Row header = sheet.getRow(1);
+            int dateColumn = IntStream.range(4, header.getLastCellNum())
+                    .filter(column -> header.getCell(column) != null
+                            && org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(header.getCell(column)))
+                    .filter(column -> org.apache.poi.ss.usermodel.DateUtil.getJavaDate(header.getCell(column).getNumericCellValue())
+                            .toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate().equals(TEST_DATE))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(sheet.getRow(3).getCell(dateColumn).getStringCellValue())
                     .isEqualTo("o");
         }
 
-        Path confirmationLog = attendanceDirectory.resolve(
-                "무료급식 일일 식사내역_%s.txt"
-                        .formatted(TEST_DATE.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))));
-        List<String> lines = Files.readAllLines(confirmationLog);
-        assertThat(lines).hasSize(2);
-        assertThat(lines.get(0)).isEqualTo("[출석 인원 : 1]");
-        assertThat(lines.get(1)).startsWith(TEST_NAME + "/" + TEST_BIRTH_DATE + "/");
+        try (var files = Files.list(attendanceDirectory)) {
+            assertThat(files.map(path -> path.getFileName().toString()))
+                    .noneMatch(fileName -> fileName.endsWith(".txt"));
+        }
+    }
+
+    private void assertThatAttendanceWasCleared() throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(attendanceWorkbook))) {
+            Sheet sheet = workbook.getSheet("내역1");
+            Row header = sheet.getRow(1);
+            int dateColumn = IntStream.range(4, header.getLastCellNum())
+                    .filter(column -> header.getCell(column) != null
+                            && org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(header.getCell(column)))
+                    .filter(column -> org.apache.poi.ss.usermodel.DateUtil.getJavaDate(header.getCell(column).getNumericCellValue())
+                            .toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate().equals(TEST_DATE))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(sheet.getRow(3).getCell(dateColumn).getStringCellValue()).isBlank();
+        }
     }
 
     private static void ensureTestEnvironment() {
@@ -140,10 +227,13 @@ class QrApiIntegrationTest {
             testDirectory = Files.createTempDirectory("bgrc-api-test-");
             rosterDirectory = Files.createDirectories(testDirectory.resolve("userlist"));
             attendanceDirectory = Files.createDirectories(testDirectory.resolve("attendance"));
-            attendanceWorkbook = attendanceDirectory.resolve("attendance.xlsx");
+            monthlyDirectory = Files.createDirectories(attendanceDirectory.resolve("monthly"));
+            attendanceTemplate = attendanceDirectory.resolve("attendance-template.xlsx");
+            attendanceWorkbook = monthlyDirectory.resolve("무료급식 일일 식사내역_%02d.%d_일지.xlsx"
+                    .formatted(TEST_DATE.getYear() % 100, TEST_DATE.getMonthValue()));
 
             createRosterWorkbook(rosterDirectory.resolve("roster.xlsx"));
-            createAttendanceWorkbook(attendanceWorkbook);
+            createAttendanceTemplate(attendanceTemplate);
         } catch (IOException e) {
             throw new IllegalStateException("API 통합 테스트 환경 생성 실패", e);
         }
@@ -166,25 +256,31 @@ class QrApiIntegrationTest {
         }
     }
 
-    private static void createAttendanceWorkbook(Path path) throws IOException {
+    private static void createAttendanceTemplate(Path path) throws IOException {
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              OutputStream outputStream = Files.newOutputStream(path)) {
             CellStyle dateStyle = workbook.createCellStyle();
             dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("m/d"));
 
-            Sheet sheet = workbook.createSheet("내역1");
-            Row header = sheet.createRow(1);
-            header.createCell(1).setCellValue("연번");
-            header.createCell(2).setCellValue("성명");
-            header.createCell(4).setCellValue(Date.valueOf(TEST_DATE));
-            header.getCell(4).setCellStyle(dateStyle);
-
-            Row data = sheet.createRow(2);
-            data.createCell(1).setCellValue(1);
-            data.createCell(2).setCellValue(TEST_NAME);
-            data.createCell(4);
-            workbook.createSheet("내역2");
+            createTemplateSheet(workbook, "내역1", dateStyle);
+            createTemplateSheet(workbook, "내역2", dateStyle);
             workbook.write(outputStream);
         }
+    }
+
+    private static void createTemplateSheet(XSSFWorkbook workbook, String sheetName, CellStyle dateStyle) {
+        Sheet sheet = workbook.createSheet(sheetName);
+        Row header = sheet.createRow(1);
+        header.createCell(1).setCellValue("연번");
+        header.createCell(2).setCellValue("성명");
+        header.createCell(4).setCellValue(Date.valueOf(TEST_DATE));
+        header.getCell(4).setCellStyle(dateStyle);
+
+        Row weekday = sheet.createRow(2);
+        weekday.createCell(4).setCellValue("월");
+        Row prototype = sheet.createRow(3);
+        prototype.createCell(1);
+        prototype.createCell(2);
+        prototype.createCell(4);
     }
 }

@@ -1,6 +1,8 @@
 package com.bgrc.attendance.domain.qr.service;
 
 import com.bgrc.attendance.domain.qr.config.AttendanceLogConfig;
+import com.bgrc.attendance.domain.user.service.UserService;
+import com.bgrc.attendance.global.util.RuntimeDataPathResolver;
 import com.bgrc.attendance.global.common.CustomException;
 import com.bgrc.attendance.global.common.ResponseCode;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -11,12 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,17 +29,21 @@ class AttendanceServiceTest {
     Path tempDirectory;
 
     @Test
-    void usesMemoryForDuplicateCheckAndWritesExcelAndConfirmationLog() throws Exception {
+    void usesMemoryForDuplicateCheckAndWritesOnlyTheGeneratedMonthlyLedger() throws Exception {
         LocalDate today = LocalDate.now();
-        Path workbookPath = createWorkbook(today);
+        Path monthlyDirectory = tempDirectory.resolve("monthly");
+        Path workbookPath = createWorkbook(monthlyDirectory, today);
 
         AttendanceLogConfig config = mock(AttendanceLogConfig.class);
-        when(config.getExcelPath()).thenReturn(workbookPath.toString());
+        when(config.getMonthlyDir()).thenReturn(monthlyDirectory.toString());
+        when(config.getLogDir()).thenReturn(tempDirectory.toString());
         when(config.getSheetNames()).thenReturn("내역1,내역2");
 
-        AttendanceLogExcelService excelService = new AttendanceLogExcelService(config);
-        AttendanceService attendanceService = new AttendanceService(excelService);
-        setField(attendanceService, "attendanceDir", tempDirectory.toString());
+        AttendanceLogExcelService excelService = new AttendanceLogExcelService(config, new RuntimeDataPathResolver());
+        MonthlyAttendanceLedgerService monthlyAttendanceLedgerService = mock(MonthlyAttendanceLedgerService.class);
+        UserService userService = mock(UserService.class);
+        when(userService.getUsers()).thenReturn(List.of());
+        AttendanceService attendanceService = new AttendanceService(excelService, monthlyAttendanceLedgerService, userService);
         attendanceService.init();
 
         assertThat(attendanceService.isAttended("홍길동", "1990-01-01")).isFalse();
@@ -56,16 +60,16 @@ class AttendanceServiceTest {
                     .isEqualTo("o");
         }
 
-        Path confirmationLog = tempDirectory.resolve(
-                "무료급식 일일 식사내역_%s.txt".formatted(today.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))));
-        List<String> logLines = Files.readAllLines(confirmationLog);
-        assertThat(logLines).containsExactly(
-                "[출석 인원 : 1]",
-                "홍길동/1990-01-01/%s".formatted(logLines.get(1).substring(logLines.get(1).lastIndexOf('/') + 1)));
+        try (var paths = Files.list(tempDirectory)) {
+            assertThat(paths.map(path -> path.getFileName().toString()))
+                    .noneMatch(fileName -> fileName.endsWith(".txt"));
+        }
     }
 
-    private Path createWorkbook(LocalDate date) throws Exception {
-        Path workbookPath = tempDirectory.resolve("attendance.xlsx");
+    private Path createWorkbook(Path monthlyDirectory, LocalDate date) throws Exception {
+        Files.createDirectories(monthlyDirectory);
+        Path workbookPath = monthlyDirectory.resolve("무료급식 일일 식사내역_%02d.%d_일지.xlsx"
+                .formatted(date.getYear() % 100, date.getMonthValue()));
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              OutputStream outputStream = Files.newOutputStream(workbookPath)) {
             CellStyle dateStyle = workbook.createCellStyle();
@@ -86,11 +90,5 @@ class AttendanceServiceTest {
             workbook.write(outputStream);
         }
         return workbookPath;
-    }
-
-    private void setField(Object target, String fieldName, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
     }
 }

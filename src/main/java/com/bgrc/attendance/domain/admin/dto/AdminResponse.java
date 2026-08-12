@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AdminResponse {
     private Integer userCount;
-    private String excelPath;
     private Boolean fileExists;
+    private String rosterFileName;
 }

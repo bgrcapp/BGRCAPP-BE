@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용법 - 무료급식 출석 시스템</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="사용법.css?v=20260812-1">
+</head>
+<body>
+    <main class="guide-shell">
+        <header class="guide-header">
+            <a class="brand" href="/admin.html" aria-label="관리자 페이지로 이동">
+                <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="북구장애인종합복지관 로고">
+            </a>
+            <a class="admin-link" href="/admin.html">
+                <i class="fa-solid fa-gear" aria-hidden="true"></i> 관리자 페이지
+            </a>
+        </header>
+
+        <section class="hero" aria-labelledby="guideTitle">
+            <div class="eyebrow"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 처음 사용하는 분을 위한 안내</div>
+            <h1 id="guideTitle">무료급식 출석 시스템 사용법</h1>
+            <p>명단을 등록한 뒤 QR로 출석을 처리하고, 월별 출석 일지에서 결과를 확인·정정·내보내는 서비스입니다.</p>
+            <img class="flow-illustration" src="images/attendance-flow-guide.png" alt="이용자가 QR을 제시하고 태블릿이 확인한 뒤 관리자가 월별 출석 일지를 관리하는 흐름 그림">
+        </section>
+
+        <nav class="section-nav" aria-label="사용법 목차">
+            <a href="#start">시작 전 준비</a>
+            <a href="#flow">서비스 흐름</a>
+            <a href="#admin">관리자 업무</a>
+            <a href="#records">파일과 보관</a>
+            <a href="#check">문제 확인</a>
+        </nav>
+
+        <section class="guide-section" id="start" aria-labelledby="startTitle">
+            <div class="section-heading">
+                <span class="section-number">01</span>
+                <div>
+                    <h2 id="startTitle">시작 전 준비</h2>
+                    <p>서버와 태블릿이 같은 네트워크에서 연결되어 있어야 합니다.</p>
+                </div>
+            </div>
+            <div class="prep-grid">
+                <article class="info-card">
+                    <i class="fa-solid fa-server icon-blue" aria-hidden="true"></i>
+                    <h3>1. 서버 실행</h3>
+                    <p>Windows PC에서 서버 JAR를 실행합니다. 서버가 켜진 뒤에 관리자 페이지와 QR 출석 기능을 모두 사용할 수 있습니다.</p>
+                </article>
+                <article class="info-card">
+                    <i class="fa-solid fa-wifi icon-mint" aria-hidden="true"></i>
+                    <h3>2. 주소 확인</h3>
+                    <p>서버를 실행한 관리자 PC에서 관리자 페이지를 엽니다. 주소는 <code>http://localhost:8080</code>입니다.</p>
+                </article>
+                <article class="info-card">
+                    <i class="fa-solid fa-file-excel icon-green" aria-hidden="true"></i>
+                    <h3>3. 명단 파일 준비</h3>
+                    <p>엑셀의 <strong>연번, 성명, 생년월일</strong> 열을 확인합니다. 등록할 명단 전체를 한 파일로 준비합니다.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="guide-section" id="flow" aria-labelledby="flowTitle">
+            <div class="section-heading">
+                <span class="section-number">02</span>
+                <div>
+                    <h2 id="flowTitle">서비스는 이렇게 흐릅니다</h2>
+                    <p>출석을 찍는 순간부터 기록이 남는 곳까지의 전체 흐름입니다.</p>
+                </div>
+            </div>
+            <ol class="flow-list">
+                <li>
+                    <span class="flow-icon blue"><i class="fa-solid fa-upload" aria-hidden="true"></i></span>
+                    <div><strong>관리자가 명단을 업로드합니다.</strong><p>업로드한 명단은 현재 출석 대상자의 기준 명단이 되며, 서버 메모리에도 즉시 반영됩니다.</p></div>
+                </li>
+                <li>
+                    <span class="flow-icon violet"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></span>
+                    <div><strong>이용자가 QR을 제시하고 태블릿이 스캔합니다.</strong><p>태블릿은 서버로 QR 정보를 전송하고, 서버는 현재 등록된 명단에서 대상자를 확인합니다.</p></div>
+                </li>
+                <li>
+                    <span class="flow-icon green"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                    <div><strong>서버가 해당 날짜에 출석 표시를 저장합니다.</strong><p>정상 처리되면 그 달의 출석 일지에서 해당 이용자·날짜 칸에 <code>o</code>가 기록됩니다. 같은 날 다시 찍으면 중복 출석으로 처리하지 않습니다.</p></div>
+                </li>
+                <li>
+                    <span class="flow-icon coral"><i class="fa-solid fa-face-smile" aria-hidden="true"></i></span>
+                    <div><strong>태블릿에 확인 화면이 표시됩니다.</strong><p>서버의 응답을 받은 뒤 이용자 이름과 환영 문구가 화면에 나타납니다.</p></div>
+                </li>
+            </ol>
+        </section>
+
+        <section class="guide-section" id="admin" aria-labelledby="adminTitle">
+            <div class="section-heading">
+                <span class="section-number">03</span>
+                <div>
+                    <h2 id="adminTitle">관리자 페이지에서 하는 일</h2>
+                    <p>명단 등록, 출석 확인, 수동 정정, 엑셀 내보내기를 한 화면에서 처리합니다.</p>
+                </div>
+            </div>
+            <div class="task-grid">
+                <article class="task-card">
+                    <span class="task-label">명단 등록</span>
+                    <h3>새 명단 업로드</h3>
+                    <p>파일을 선택한 뒤 <strong>업로드하기</strong>를 누릅니다. 새 파일은 기존 대상자 명단 전체를 교체하므로, 일부 인원만 담긴 파일을 올리지 않도록 주의합니다.</p>
+                </article>
+                <article class="task-card">
+                    <span class="task-label">출석 확인</span>
+                    <h3>날짜별 현황 조회</h3>
+                    <p>오른쪽 출석체크 현황에서 날짜를 선택하면 전체·출석·결석 수와 대상자별 상태를 확인할 수 있습니다.</p>
+                </article>
+                <article class="task-card">
+                    <span class="task-label">수동 정정</span>
+                    <h3>출석 / 결석 버튼 누르기</h3>
+                    <p>대상자 오른쪽 상태 버튼을 누르면 <strong>결석 → 출석</strong>, <strong>출석 → 결석</strong>으로 즉시 바뀝니다. 변경 사항은 해당 월 출석 일지에도 바로 저장됩니다.</p>
+                </article>
+                <article class="task-card">
+                    <span class="task-label">보관·제출</span>
+                    <h3>엑셀 내보내기</h3>
+                    <p>원하는 날짜를 조회한 뒤 <strong>엑셀 내보내기</strong>를 누르면, 그 날짜가 속한 월의 출석 일지를 내려받을 수 있습니다.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="guide-section" id="records" aria-labelledby="recordsTitle">
+            <div class="section-heading">
+                <span class="section-number">04</span>
+                <div>
+                    <h2 id="recordsTitle">파일은 두 종류로 관리됩니다</h2>
+                    <p>원본 명단과 실제 출석 기록을 혼동하지 않도록 구분합니다.</p>
+                </div>
+            </div>
+            <div class="record-grid">
+                <article class="record-card roster-card">
+                    <div class="record-icon"><i class="fa-solid fa-address-book" aria-hidden="true"></i></div>
+                    <div>
+                        <h3>현재 대상자 명단</h3>
+                        <code>data/userlist/attendance-roster.xlsx</code>
+                        <p>관리자 페이지에서 올린 명단입니다. QR 대상자를 찾기 위한 기준이며, 새 명단을 업로드하면 이 파일이 교체됩니다.</p>
+                    </div>
+                </article>
+                <article class="record-card ledger-card">
+                    <div class="record-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></div>
+                    <div>
+                        <h3>월별 출석 일지</h3>
+                        <code>data/attendance/무료급식 일일 식사내역_26.8_일지.xlsx</code>
+                        <p>실제 출석 표시가 저장되는 파일입니다. 달이 바뀐 뒤 처음 출석·조회·관리하는 시점에 새 월 파일이 자동 생성되며, 이전 달 파일은 그대로 보관됩니다.</p>
+                    </div>
+                </article>
+            </div>
+            <aside class="notice">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <div><strong>엑셀 직접 수정은 가급적 피하세요.</strong> 서버가 실행 중일 때에는 관리자 페이지의 상태 버튼으로 정정하는 방식이 안전합니다. 꼭 직접 수정해야 한다면 서버를 끄고 파일을 백업한 뒤 수정하세요.</div>
+            </aside>
+        </section>
+
+        <section class="guide-section" id="check" aria-labelledby="checkTitle">
+            <div class="section-heading">
+                <span class="section-number">05</span>
+                <div>
+                    <h2 id="checkTitle">문제가 생기면 먼저 확인하세요</h2>
+                    <p>대부분의 문제는 서버 실행 상태, 네트워크 주소, 엑셀 파일 열림 상태에서 확인할 수 있습니다.</p>
+                </div>
+            </div>
+            <div class="faq-list">
+                <details open>
+                    <summary>QR을 찍었는데 화면이 바뀌지 않아요.</summary>
+                    <p>서버 PC가 실행 중인지, 태블릿이 같은 Wi-Fi에 연결되어 있는지, 태블릿에 설정한 서버 IP와 포트가 맞는지 확인하세요. 서버 창의 로그에 QR 요청과 처리 결과가 남습니다.</p>
+                </details>
+                <details>
+                    <summary>명단 업로드가 실패하거나 엑셀을 닫으라는 안내가 나와요.</summary>
+                    <p>Windows에서는 열려 있는 엑셀 파일이 잠길 수 있습니다. 현재 명단 또는 출석 일지를 열어 둔 엑셀 창을 모두 닫고, 잠시 후 다시 업로드하세요.</p>
+                </details>
+                <details>
+                    <summary>다음 달이 되었는데 새 파일을 따로 만들어야 하나요?</summary>
+                    <p>아닙니다. 다음 달에 처음 출석을 처리하거나 그 달을 조회하면 현재 명단을 기준으로 새 월 출석 일지가 자동 생성됩니다.</p>
+                </details>
+                <details>
+                    <summary>테스트로 찍은 출석을 지우고 싶어요.</summary>
+                    <p>관리자 페이지에서 해당 날짜를 선택한 뒤, 해당 이용자의 <strong>출석</strong> 버튼을 눌러 <strong>결석</strong>으로 바꾸세요. 그러면 출석 일지의 표시도 함께 지워집니다.</p>
+                </details>
+            </div>
+        </section>
+
+        <footer class="guide-footer">
+            <p>무료급식 출석 시스템 · 운영 중에는 관리자 페이지를 통해 명단과 출석을 관리하세요.</p>
+            <a href="/admin.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> 관리자 페이지로 돌아가기</a>
+        </footer>
+    </main>
+</body>
+</html>

@@ -10,8 +10,11 @@ public class AttendanceLogConfig {
     @Value("${attendance.log.dir}")
     private String logDir;
 
-    @Value("${attendance.log.excel}")
-    private String excelPath;
+    @Value("${attendance.log.template:}")
+    private String templatePath;
+
+    @Value("${attendance.log.monthly-dir:}")
+    private String monthlyDir;
 
     @Value("${attendance.log.sheets:내역1,내역2}")
     private String sheetNames;

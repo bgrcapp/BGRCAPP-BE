@@ -40,3 +40,9 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.named('processResources') {
+    from('data/attendance/무료급식 일일 식사내역_26.8_일지.xlsx') {
+        rename { 'attendance-template.xlsx' }
+    }
+}
