@@ -78,11 +78,19 @@ body.sidebar-open .app-sidebar {
     text-decoration: none;
 }
 
-.app-sidebar-brand img {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 0.7rem;
-    object-fit: cover;
+.app-sidebar-brand-mark {
+    display: block;
+    flex: 0 0 3.75rem;
+    width: 3.75rem;
+    height: 2.5rem;
+    overflow: hidden;
+}
+
+.app-sidebar-brand-mark img {
+    display: block;
+    width: auto;
+    max-width: none;
+    height: 2.5rem;
 }
 
 .app-sidebar-brand strong,
