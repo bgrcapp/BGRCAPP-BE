@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.bgrc'
-version = '0.0.1-SNAPSHOT'
+version = providers.gradleProperty('releaseVersion').getOrElse('1.2.0')
 description = 'attendance'
 
 java {
@@ -39,6 +39,31 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+springBoot {
+    buildInfo()
+}
+
+tasks.named('bootJar') {
+    archiveFileName = "attendance-${project.version}.jar"
+}
+
+tasks.register('prepareWindowsDistribution', Copy) {
+    dependsOn tasks.named('bootJar'), ':launcher:prepareDistribution'
+    into(layout.buildDirectory.dir('windows-distribution'))
+
+    from('launcher/build/distribution')
+    from(tasks.named('bootJar')) {
+        into('versions')
+    }
+}
+
+tasks.register('packageWindowsDistribution', Zip) {
+    dependsOn tasks.named('prepareWindowsDistribution')
+    archiveFileName = "bgrc-attendance-${project.version}-windows.zip"
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    from(layout.buildDirectory.dir('windows-distribution'))
 }
 
 tasks.named('processResources') {

@@ -8,6 +8,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -57,6 +58,9 @@ class QrApiIntegrationTest {
     @Autowired
     private AttendanceService attendanceService;
 
+    @Autowired
+    private BuildProperties buildProperties;
+
     @Test
     void rootForwardsToTheAdminPage() throws Exception {
         mockMvc.perform(get("/"))
@@ -68,6 +72,17 @@ class QrApiIntegrationTest {
     void faviconFallbackDoesNotReturnAnInternalServerError() throws Exception {
         mockMvc.perform(get("/favicon.ico"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void versionApiReturnsTheBuildVersionForTheLauncherHealthCheck() throws Exception {
+        mockMvc.perform(get("/api/version"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(buildProperties.getVersion()));
+
+        mockMvc.perform(get("/api/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(buildProperties.getVersion()));
     }
 
     @AfterAll

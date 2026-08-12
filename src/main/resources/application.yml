@@ -6,6 +6,8 @@ spring:
   devtools:
     restart:
       enabled: false
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   servlet:
     multipart:
       max-file-size: 10MB
@@ -36,3 +38,7 @@ logging:
     name: ./data/logs/attendance.log
   level:
     com.bgrc.attendance: info
+
+server:
+  # launcher가 새 버전을 적용할 때 진행 중인 Excel 저장을 최대한 마무리한 뒤 종료한다.
+  shutdown: graceful

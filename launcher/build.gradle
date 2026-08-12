@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+}
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+group = rootProject.group
+version = rootProject.version
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.12.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('jar') {
+    archiveBaseName = 'attendance-launcher'
+    manifest {
+        attributes('Main-Class': 'com.bgrc.attendance.launcher.AttendanceLauncher')
+    }
+}
+
+tasks.register('prepareDistribution', Copy) {
+    dependsOn tasks.named('jar')
+    into(layout.buildDirectory.dir('distribution'))
+    from(tasks.named('jar')) {
+        rename { 'attendance-launcher.jar' }
+        into('launcher')
+    }
+    from('run-attendance-launcher.bat') {
+        into('launcher')
+    }
+    from('launcher.properties.example') {
+        rename { 'launcher.properties' }
+        into('config')
+        filter(ReplaceTokens, tokens: [VERSION: project.version.toString()])
+    }
+}
