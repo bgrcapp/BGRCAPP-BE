@@ -12,7 +12,8 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 
-RELEASE_FILE = re.compile(r"^attendance-\d+\.\d+\.\d+\.jar$")
+# 릴리스는 major.minor.patch를 기본으로 하되, 1.2.9.4처럼 추가 숫자 버전도 허용한다.
+RELEASE_FILE = re.compile(r"^attendance-\d+(?:\.\d+){2,}\.jar$")
 STABLE_FILES = {"manifest.json", "manifest.json.sig"}
 
 
@@ -49,7 +50,9 @@ class UpdateFileHandler(SimpleHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path.startswith("/stable/"):
             self.send_header("Cache-Control", "no-store")
-        elif path.startswith("/releases/"):
+        # 파일이 실제로 존재할 때만 장기 캐시한다. 없는 릴리스의 404가 Cloudflare에
+        # 장기간 남으면, 이후 같은 버전 파일을 올려도 launcher가 받을 수 없게 된다.
+        elif self._is_existing_release(path):
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")
         self.send_header("X-Content-Type-Options", "nosniff")
         super().end_headers()
@@ -66,6 +69,12 @@ class UpdateFileHandler(SimpleHTTPRequestHandler):
         if path.startswith("/releases/"):
             return bool(RELEASE_FILE.fullmatch(path.removeprefix("/releases/")))
         return False
+
+    def _is_existing_release(self, path: str) -> bool:
+        if not path.startswith("/releases/"):
+            return False
+        filename = path.removeprefix("/releases/")
+        return bool(RELEASE_FILE.fullmatch(filename) and (self.root_directory / "releases" / filename).is_file())
 
     def log_message(self, format, *args):
         print("%s - %s" % (self.log_date_time_string(), format % args), flush=True)
