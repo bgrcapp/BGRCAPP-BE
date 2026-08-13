@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * data/attendance 바로 아래의 월별 출석 일지들을 읽어 누계·월별·개인별 이용 현황을 만든다.
+ * data/attendance 바로 아래의 월별 출석 일지들을 읽어 누계·월별·일별·개인별 이용 현황을 만든다.
  *
  * <p>기존에 작성된 일지는 일별 총계가 COUNTIF 수식 범위로 결정된다. 과거 일지에 인원이
  * 추가됐지만 수식 범위가 늘지 않은 경우에도 기존 공식 누계와 통계가 같아야 하므로, 해당
@@ -68,13 +68,14 @@ public class AttendanceStatisticsService {
     public AttendanceStatisticsResponse getStatistics() {
         Map<YearMonth, Path> ledgerFiles = findLedgerFiles();
         Map<YearMonth, MonthAccumulator> months = new TreeMap<>();
+        Map<LocalDate, DayAccumulator> days = new TreeMap<>();
         Map<String, PersonAccumulator> people = new HashMap<>();
         Set<AttendanceKey> recordedAttendances = new HashSet<>();
         IdentityResolver identityResolver = new IdentityResolver(userService.getUsers());
         int sourceFileCount = 0;
 
         for (Map.Entry<YearMonth, Path> entry : ledgerFiles.entrySet()) {
-            if (readLedger(entry.getValue(), entry.getKey(), months, people, recordedAttendances, identityResolver)) {
+            if (readLedger(entry.getValue(), entry.getKey(), months, days, people, recordedAttendances, identityResolver)) {
                 sourceFileCount++;
             }
         }
@@ -84,6 +85,12 @@ public class AttendanceStatisticsService {
         for (Map.Entry<YearMonth, MonthAccumulator> entry : months.entrySet()) {
             cumulativeMealCount += entry.getValue().mealCount;
             monthlyStatistics.add(toMonthlyStatistics(entry.getKey(), entry.getValue(), cumulativeMealCount));
+        }
+        List<AttendanceStatisticsResponse.DailyAttendanceStatistics> dailyStatistics = new ArrayList<>();
+        int dailyCumulativeMealCount = 0;
+        for (Map.Entry<LocalDate, DayAccumulator> entry : days.entrySet()) {
+            dailyCumulativeMealCount += entry.getValue().mealCount;
+            dailyStatistics.add(toDailyStatistics(entry.getKey(), entry.getValue(), dailyCumulativeMealCount));
         }
         List<AttendanceStatisticsResponse.PersonAttendanceStatistics> personStatistics = people.values().stream()
                 .map(this::toPersonStatistics)
@@ -106,6 +113,7 @@ public class AttendanceStatisticsService {
                 latest == null ? 0 : latest.mealCount,
                 latestMonth == null ? "" : latestMonth.format(MONTH_FORMATTER),
                 monthlyStatistics,
+                dailyStatistics,
                 personStatistics
         );
     }
@@ -155,6 +163,7 @@ public class AttendanceStatisticsService {
     private boolean readLedger(Path path,
                                YearMonth month,
                                Map<YearMonth, MonthAccumulator> months,
+                               Map<LocalDate, DayAccumulator> days,
                                Map<String, PersonAccumulator> people,
                                Set<AttendanceKey> recordedAttendances,
                                IdentityResolver identityResolver) {
@@ -165,7 +174,7 @@ public class AttendanceStatisticsService {
                 if (sheet == null) continue;
                 Layout layout = findLayout(sheet);
                 if (layout == null) continue;
-                readSheet(sheet, layout, month, months, people, recordedAttendances, identityResolver);
+                readSheet(sheet, layout, month, months, days, people, recordedAttendances, identityResolver);
             }
             return true;
         } catch (IOException e) {
@@ -178,6 +187,7 @@ public class AttendanceStatisticsService {
                            Layout layout,
                            YearMonth month,
                            Map<YearMonth, MonthAccumulator> months,
+                           Map<LocalDate, DayAccumulator> days,
                            Map<String, PersonAccumulator> people,
                            Set<AttendanceKey> recordedAttendances,
                            IdentityResolver identityResolver) {
@@ -211,6 +221,8 @@ public class AttendanceStatisticsService {
 
                 MonthAccumulator monthAccumulator = months.computeIfAbsent(month, ignored -> new MonthAccumulator());
                 monthAccumulator.record(dateColumn.date(), identity.key());
+                days.computeIfAbsent(dateColumn.date(), ignored -> new DayAccumulator())
+                        .record(identity.key());
                 people.computeIfAbsent(identity.key(), ignored -> new PersonAccumulator(identity.serialNumber(), identity.name()))
                         .record(dateColumn.date(), identity.serialNumber(), identity.name());
             }
@@ -259,6 +271,17 @@ public class AttendanceStatisticsService {
                 source.name,
                 source.visitCount,
                 source.lastAttendance == null ? "" : source.lastAttendance.format(DATE_FORMATTER)
+        );
+    }
+
+    private AttendanceStatisticsResponse.DailyAttendanceStatistics toDailyStatistics(LocalDate date,
+                                                                                        DayAccumulator source,
+                                                                                        int cumulativeMealCount) {
+        return new AttendanceStatisticsResponse.DailyAttendanceStatistics(
+                date.format(DATE_FORMATTER),
+                source.mealCount,
+                cumulativeMealCount,
+                source.people.size()
         );
     }
 
@@ -406,6 +429,16 @@ public class AttendanceStatisticsService {
                 serialNumber = recordedSerialNumber;
                 name = recordedName;
             }
+        }
+    }
+
+    private static final class DayAccumulator {
+        private int mealCount;
+        private final Set<String> people = new HashSet<>();
+
+        private void record(String personKey) {
+            mealCount++;
+            people.add(personKey);
         }
     }
 

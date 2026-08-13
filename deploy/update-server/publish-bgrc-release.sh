@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 사용 예: ./deploy/update-server/publish-bgrc-release.sh 1.2.2
+# 사용 예: ./deploy/update-server/publish-bgrc-release.sh 1.2.9.1
 # 개인 서명 키는 개발 Mac에만 존재해야 하며, Ubuntu에는 전달하지 않는다.
 
-VERSION="${1:?사용법: $0 <major.minor.patch>}"
+VERSION="${1:?사용법: $0 <major.minor.patch[.build ...]>}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SIGNING_KEY="${BGRC_UPDATE_SIGNING_KEY:-$HOME/.config/bgrc-attendance/update-signing-private.pem}"
 UPDATE_HOST="${BGRC_UPDATE_HOST:-feralshining@100.108.22.80}"
@@ -26,8 +26,8 @@ if [[ -z "$JAVA_EXECUTABLE" ]]; then
     fi
 fi
 
-if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "버전은 major.minor.patch 형식이어야 합니다: $VERSION" >&2
+if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+){2,}$ ]]; then
+    echo "버전은 major.minor.patch 또는 그 이상의 숫자 형식이어야 합니다: $VERSION" >&2
     exit 1
 fi
 if [[ ! -f "$SIGNING_KEY" ]]; then

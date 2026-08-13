@@ -70,14 +70,16 @@ h2, p { margin-top: 0; }
 .monthly-bar-item small { padding-top: .35rem; color: #74819a; font-size: .66rem; white-space: nowrap; }
 .monthly-bar-item em { padding-top: .12rem; color: #7083b7; font-size: clamp(.48rem, 1vw, .61rem); font-style: normal; font-weight: 700; white-space: nowrap; }
 
-.monthly-table-wrap, .person-table-wrap { overflow-x: auto; }
+.monthly-table-wrap, .daily-table-wrap, .person-table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: .7rem .65rem; border-top: 1px solid #e8edf6; color: #596983; font-size: .78rem; white-space: nowrap; }
 thead th { border-top: 0; color: #7a879d; background: #f7f9fd; font-size: .68rem; font-weight: 700; }
 tbody th { color: #314365; font-weight: 700; }
 tbody tr:hover { background: #fbfcff; }
-.monthly-table th:first-child, .monthly-table td:first-child, .person-table th:first-child, .person-table td:first-child { padding-left: .8rem; }
+.monthly-table th:first-child, .monthly-table td:first-child, .daily-table th:first-child, .daily-table td:first-child, .person-table th:first-child, .person-table td:first-child { padding-left: .8rem; }
 .monthly-table strong { color: #2e55be; }
+.daily-table { margin-top: 1rem; }
+.daily-table strong { color: #2e55be; }
 .cumulative-count { color: #6a4eb4; font-weight: 700; }
 
 .panel-heading-with-control { align-items: center; }

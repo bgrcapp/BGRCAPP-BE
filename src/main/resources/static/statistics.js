@@ -1,4 +1,4 @@
-let attendanceStatistics = { monthlyStatistics: [], people: [] };
+let attendanceStatistics = { monthlyStatistics: [], dailyStatistics: [], people: [] };
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -51,6 +51,22 @@ function renderMonthlyStatistics(months) {
         </tr>`).join('');
 }
 
+function renderDailyStatistics(days) {
+    const tableBody = document.getElementById('dailyTableBody');
+    if (!days.length) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="statistics-empty">집계할 출석 기록이 없습니다.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = days.map(day => `
+        <tr>
+            <th scope="row">${escapeHtml(day.date)}</th>
+            <td><strong>${formatNumber(day.mealCount)}건</strong></td>
+            <td class="cumulative-count">${formatNumber(day.cumulativeMealCount)}건</td>
+            <td>${formatNumber(day.uniqueUserCount)}명</td>
+        </tr>`).join('');
+}
+
 function renderPersonStatistics(searchText = '') {
     const normalizedSearch = searchText.trim();
     const people = (attendanceStatistics.people || [])
@@ -75,7 +91,7 @@ function renderPersonStatistics(searchText = '') {
 }
 
 function renderStatistics(data) {
-    attendanceStatistics = data || { monthlyStatistics: [], people: [] };
+    attendanceStatistics = data || { monthlyStatistics: [], dailyStatistics: [], people: [] };
     const monthlyStatistics = attendanceStatistics.monthlyStatistics || [];
     document.getElementById('totalMealCount').textContent = `${formatNumber(attendanceStatistics.totalMealCount)}건`;
     document.getElementById('uniqueUserCount').textContent = `${formatNumber(attendanceStatistics.uniqueUserCount)}명`;
@@ -85,6 +101,7 @@ function renderStatistics(data) {
         ? `${attendanceStatistics.latestMonth} 제공 건수`
         : '최근 월 제공 건수';
     renderMonthlyStatistics(monthlyStatistics);
+    renderDailyStatistics(attendanceStatistics.dailyStatistics || []);
     renderPersonStatistics(document.getElementById('personSearch').value);
     setStatisticsStatus(`출석 일지 ${formatNumber(attendanceStatistics.sourceFileCount)}개를 기준으로 집계했습니다.`);
 }

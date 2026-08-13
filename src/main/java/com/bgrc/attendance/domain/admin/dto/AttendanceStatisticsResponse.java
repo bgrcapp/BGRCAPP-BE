@@ -10,6 +10,7 @@ public record AttendanceStatisticsResponse(
         int latestMonthMealCount,
         String latestMonth,
         List<MonthlyAttendanceStatistics> monthlyStatistics,
+        List<DailyAttendanceStatistics> dailyStatistics,
         List<PersonAttendanceStatistics> people
 ) {
     public record MonthlyAttendanceStatistics(
@@ -19,6 +20,14 @@ public record AttendanceStatisticsResponse(
             int uniqueUserCount,
             int attendanceDayCount,
             double averageDailyCount
+    ) {
+    }
+
+    public record DailyAttendanceStatistics(
+            String date,
+            int mealCount,
+            int cumulativeMealCount,
+            int uniqueUserCount
     ) {
     }
 

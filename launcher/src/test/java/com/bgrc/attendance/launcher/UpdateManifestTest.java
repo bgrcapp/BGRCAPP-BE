@@ -41,8 +41,9 @@ class UpdateManifestTest {
     }
 
     @Test
-    void comparesOnlyThreePartReleaseVersions() {
+    void comparesThreePartAndFourPartReleaseVersions() {
         assertTrue(Version.parse("1.10.0").compareTo(Version.parse("1.2.9")) > 0);
+        assertTrue(Version.parse("1.2.9.1").compareTo(Version.parse("1.2.9")) > 0);
         assertThrows(IllegalArgumentException.class, () -> Version.parse("1.2"));
     }
 

@@ -8,8 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,11 +24,14 @@ public final class AttendanceLauncher {
     static final String LAUNCHER_VERSION = "1.0.0";
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile(
             "(?:java|openjdk)(?:\\s+version)?\\s+\\\"?(\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final AtomicReference<Process> ACTIVE_SERVER_PROCESS = new AtomicReference<>();
 
     private AttendanceLauncher() {
     }
 
     public static void main(String[] args) {
+        Runtime.getRuntime().addShutdownHook(new Thread(AttendanceLauncher::stopActiveServer,
+                "attendance-server-cleanup"));
         try {
             Path root = installationRoot(args);
             LauncherSettings settings = LauncherSettings.load(root);
@@ -78,7 +84,9 @@ public final class AttendanceLauncher {
         ProcessBuilder processBuilder = new ProcessBuilder(List.of(settings.optional("java.command", "java"), "-jar", jar.toString()));
         processBuilder.directory(root.toFile());
         processBuilder.inheritIO();
-        return processBuilder.start();
+        Process process = processBuilder.start();
+        ACTIVE_SERVER_PROCESS.set(process);
+        return process;
     }
 
     /** 서버 JAR는 Java 17 이상에서만 실행하도록 시작 전에 명확한 오류를 낸다. */
@@ -133,18 +141,51 @@ public final class AttendanceLauncher {
     }
 
     private static void waitForExit(Process process, LauncherLog log) throws InterruptedException {
-        int exitCode = process.waitFor();
-        log.info("출석 서버 프로세스가 종료되었습니다. 종료 코드: " + exitCode);
+        try {
+            int exitCode = process.waitFor();
+            log.info("출석 서버 프로세스가 종료되었습니다. 종료 코드: " + exitCode);
+        } finally {
+            ACTIVE_SERVER_PROCESS.compareAndSet(process, null);
+        }
     }
 
     private static void stop(Process process) {
-        if (!process.isAlive()) return;
-        process.destroy();
+        if (process == null) return;
+        List<ProcessHandle> processTree = processTree(process);
+        terminate(processTree, false);
         try {
-            if (!process.waitFor(35, java.util.concurrent.TimeUnit.SECONDS)) process.destroyForcibly();
+            process.waitFor(35, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            process.destroyForcibly();
+        }
+        if (processTree.stream().anyMatch(ProcessHandle::isAlive)) {
+            terminate(processTree, true);
+            try {
+                process.waitFor(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        ACTIVE_SERVER_PROCESS.compareAndSet(process, null);
+    }
+
+    /** launcher가 끝날 때 자신이 시작한 서버와 하위 프로세스를 남기지 않는다. */
+    private static void stopActiveServer() {
+        stop(ACTIVE_SERVER_PROCESS.get());
+    }
+
+    private static List<ProcessHandle> processTree(Process process) {
+        ProcessHandle root = process.toHandle();
+        List<ProcessHandle> handles = new ArrayList<>(root.descendants().toList());
+        handles.add(root);
+        return handles;
+    }
+
+    private static void terminate(List<ProcessHandle> processes, boolean forcibly) {
+        for (ProcessHandle process : processes) {
+            if (!process.isAlive()) continue;
+            if (forcibly) process.destroyForcibly();
+            else process.destroy();
         }
     }
 

@@ -52,6 +52,14 @@ class AttendanceStatisticsServiceTest {
         assertThat(result.monthlyStatistics())
                 .extracting(AttendanceStatisticsResponse.MonthlyAttendanceStatistics::cumulativeMealCount)
                 .containsExactly(2, 3);
+        assertThat(result.dailyStatistics())
+                .extracting(AttendanceStatisticsResponse.DailyAttendanceStatistics::date,
+                        AttendanceStatisticsResponse.DailyAttendanceStatistics::mealCount,
+                        AttendanceStatisticsResponse.DailyAttendanceStatistics::cumulativeMealCount,
+                        AttendanceStatisticsResponse.DailyAttendanceStatistics::uniqueUserCount)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("2026-01-05", 2, 2, 2),
+                        org.assertj.core.groups.Tuple.tuple("2026-02-02", 1, 3, 1));
         assertThat(result.people())
                 .extracting(AttendanceStatisticsResponse.PersonAttendanceStatistics::name,
                         AttendanceStatisticsResponse.PersonAttendanceStatistics::visitCount)
