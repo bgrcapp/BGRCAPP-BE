@@ -7,8 +7,9 @@ java.command=java
 
 # 서버를 시작할 때만 최신 버전을 한 번 확인합니다. 운영 중 주기 확인은 하지 않습니다.
 update.manifestUrl=https://bgrc.howmanycals.online/stable/manifest.json
-# Ed25519 공개키(X.509 DER의 Base64). 개인키는 이 파일이나 Ubuntu 서버에 두지 않습니다.
-update.publicKeyBase64=
+# Ed25519 공개키(X.509 DER의 Base64). 배포 패키징 시 Gradle 속성으로 주입한다.
+# 개인키는 이 파일이나 Ubuntu 서버에 두지 않습니다.
+update.publicKeyBase64=@UPDATE_PUBLIC_KEY@
 update.connectTimeoutSeconds=3
 update.readTimeoutSeconds=5
 update.downloadTimeoutSeconds=120

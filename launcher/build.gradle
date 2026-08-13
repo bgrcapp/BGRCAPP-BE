@@ -6,6 +6,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 group = rootProject.group
 version = rootProject.version
+def updatePublicKeyBase64 = providers.gradleProperty('updatePublicKeyBase64').orElse('').get().trim()
 
 repositories {
     mavenCentral()
@@ -40,6 +41,11 @@ tasks.named('jar') {
 
 tasks.register('prepareDistribution', Copy) {
     dependsOn tasks.named('jar')
+    doFirst {
+        if (updatePublicKeyBase64.isBlank()) {
+            throw new GradleException('Windows 배포본에는 -PupdatePublicKeyBase64=<Ed25519 공개키 Base64>가 필요합니다.')
+        }
+    }
     into(layout.buildDirectory.dir('distribution'))
     from(tasks.named('jar')) {
         rename { 'attendance-launcher.jar' }
@@ -51,6 +57,9 @@ tasks.register('prepareDistribution', Copy) {
     from('launcher.properties.example') {
         rename { 'launcher.properties' }
         into('config')
-        filter(ReplaceTokens, tokens: [VERSION: project.version.toString()])
+        filter(ReplaceTokens, tokens: [
+                VERSION          : project.version.toString(),
+                UPDATE_PUBLIC_KEY: updatePublicKeyBase64
+        ])
     }
 }

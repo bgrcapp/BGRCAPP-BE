@@ -1,0 +1,16 @@
+[Unit]
+Description=BGRC attendance signed update file server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/bgrc-updates
+ExecStart=/usr/bin/python3 %h/bgrc-updates/bgrc_update_server.py --root %h/bgrc-updates/public --bind 127.0.0.1 --port 18080
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
