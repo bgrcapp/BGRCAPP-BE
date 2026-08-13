@@ -10,6 +10,7 @@ public enum ResponseCode {
         ATTENDANCE_CHECK_SUCCESS(1000, true, "출석 체크가 완료되었습니다."),
         ATTENDANCE_LOAD_SUCCESS(1001, true, "출석 명단 파일의 경로를 설정했습니다."),
         ATTENDANCE_STATUS_LOAD_SUCCESS(1002, true, "오늘 출석 현황을 불러왔습니다."),
+        ATTENDANCE_STATISTICS_LOAD_SUCCESS(1003, true, "출석 통계를 불러왔습니다."),
     /*
         2000~ : 요청 오류 (잘못된 입력)
     */

@@ -2,6 +2,7 @@ package com.bgrc.attendance.global.common;
 
 import com.bgrc.attendance.domain.admin.dto.AdminResponse;
 import com.bgrc.attendance.domain.admin.dto.AttendanceStatusResponse;
+import com.bgrc.attendance.domain.admin.dto.AttendanceStatisticsResponse;
 import com.bgrc.attendance.domain.qr.dto.QrScanResponse;
 import lombok.Data;
 
@@ -33,6 +34,7 @@ public class CommonResponse<T> {
         if (data instanceof QrScanResponse) return new CommonResponse<>(ResponseCode.ATTENDANCE_CHECK_SUCCESS, data);
         if (data instanceof AdminResponse) return new CommonResponse<>(ResponseCode.ATTENDANCE_LOAD_SUCCESS, data);
         if (data instanceof AttendanceStatusResponse) return new CommonResponse<>(ResponseCode.ATTENDANCE_STATUS_LOAD_SUCCESS, data);
+        if (data instanceof AttendanceStatisticsResponse) return new CommonResponse<>(ResponseCode.ATTENDANCE_STATISTICS_LOAD_SUCCESS, data);
         return null;
     }
 

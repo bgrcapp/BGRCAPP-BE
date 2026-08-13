@@ -70,4 +70,13 @@ tasks.named('processResources') {
     from('data/attendance/무료급식 일일 식사내역_26.8_일지.xlsx') {
         rename { 'attendance-template.xlsx' }
     }
+    // 통계의 기준이 되는 2026년 1~7월 원본 일지는 JAR에 보관한다.
+    // 실행 시 외부 data/attendance에 없는 달만 복원하므로, 운영 중 수정된 원본은 덮어쓰지 않는다.
+    (1..7).each { month ->
+        from('data/attendance') {
+            include "*_26.${month}_일지.xlsx"
+            rename { "2026-%02d.xlsx".formatted(month) }
+            into 'historical-attendance'
+        }
+    }
 }

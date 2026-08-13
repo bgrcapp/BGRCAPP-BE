@@ -3,6 +3,7 @@ package com.bgrc.attendance.domain.admin.service;
 import com.bgrc.attendance.domain.admin.dto.AdminResponse;
 import com.bgrc.attendance.domain.admin.dto.AttendancePersonResponse;
 import com.bgrc.attendance.domain.admin.dto.AttendanceStatusResponse;
+import com.bgrc.attendance.domain.admin.dto.AttendanceStatisticsResponse;
 import com.bgrc.attendance.domain.qr.service.AttendanceLogExcelService;
 import com.bgrc.attendance.domain.qr.service.AttendanceService;
 import com.bgrc.attendance.domain.qr.service.MonthlyAttendanceLedgerService;
@@ -30,6 +31,7 @@ public class AdminService {
     private final AttendanceLogExcelService attendanceLogExcelService;
     private final MonthlyAttendanceLedgerService monthlyAttendanceLedgerService;
     private final AttendanceService attendanceService;
+    private final AttendanceStatisticsService attendanceStatisticsService;
 
     /** 현재 활성화된 출석 대상 명단의 상태를 반환한다. */
     public synchronized AdminResponse getConfig(){
@@ -111,5 +113,10 @@ public class AdminService {
             throw new CustomException(ResponseCode.ATTENDANCE_LOG_FILE_NOT_FOUND);
         }
         return ledgerPath;
+    }
+
+    /** 보관 중인 월별 출석 일지 전체를 기준으로 통계를 반환한다. */
+    public synchronized AttendanceStatisticsResponse getAttendanceStatistics() {
+        return attendanceStatisticsService.getStatistics();
     }
 }

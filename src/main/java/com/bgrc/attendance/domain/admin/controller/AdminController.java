@@ -4,6 +4,7 @@ import com.bgrc.attendance.domain.admin.service.AdminService;
 import com.bgrc.attendance.global.common.CommonResponse;
 import com.bgrc.attendance.domain.admin.dto.AdminResponse;
 import com.bgrc.attendance.domain.admin.dto.AttendanceStatusResponse;
+import com.bgrc.attendance.domain.admin.dto.AttendanceStatisticsResponse;
 import com.bgrc.attendance.global.common.CustomException;
 import com.bgrc.attendance.global.common.ResponseCode;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,11 @@ public class AdminController {
     @GetMapping("/attendance/today")
     public CommonResponse<AttendanceStatusResponse> getTodayAttendance() {
         return getAttendance(LocalDate.now());
+    }
+
+    @GetMapping("/statistics")
+    public CommonResponse<AttendanceStatisticsResponse> getAttendanceStatistics() {
+        return CommonResponse.success(adminService.getAttendanceStatistics());
     }
 
     @PostMapping("/attendance/toggle")
