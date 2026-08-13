@@ -13,6 +13,22 @@ public class AdminPageController {
         return "forward:/admin.html";
     }
 
+    /** 메뉴와 직접 주소 입력 모두 동일한 경로로 통일한다. */
+    @GetMapping({"/admin", "/admin/", "/dashboard", "/dashboard/"})
+    public String dashboardPage() {
+        return "forward:/admin.html";
+    }
+
+    @GetMapping({"/statistics", "/statistics/"})
+    public String statisticsPage() {
+        return "forward:/statistics.html";
+    }
+
+    @GetMapping({"/guide", "/guide/"})
+    public String guidePage() {
+        return "forward:/사용법.html";
+    }
+
     /** 이전 브라우저 캐시 등이 favicon을 요청해도 WAS 오류 응답으로 처리하지 않는다. */
     @GetMapping("/favicon.ico")
     @ResponseStatus(HttpStatus.NO_CONTENT)

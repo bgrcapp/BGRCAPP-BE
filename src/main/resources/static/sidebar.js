@@ -18,6 +18,9 @@
     }
 
     setOpen(initialOpen);
+    // HTML 파싱 단계에서 적용한 초기 상태를 실제 body 상태로 넘긴다.
+    document.documentElement.classList.remove('sidebar-initial-open');
+    requestAnimationFrame(() => document.body.classList.add('sidebar-ready'));
     toggle.addEventListener('click', () => setOpen(!document.body.classList.contains('sidebar-open')));
     backdrop?.addEventListener('click', () => setOpen(false));
     document.addEventListener('keydown', (event) => {

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석 통계 - 무료급식 출석 시스템</title>
+    <script>
+        try {
+            const sidebarState = localStorage.getItem('attendance.sidebar.open');
+            if (sidebarState === 'true' || (sidebarState === null && matchMedia('(min-width: 70rem)').matches)) {
+                document.documentElement.classList.add('sidebar-initial-open');
+            }
+        } catch (ignored) { }
+    </script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="app.css?v=20260813-3">
+    <link rel="stylesheet" href="statistics.css?v=20260813-3">
+    <link rel="stylesheet" href="sidebar.css?v=20260813-4">
+    <script src="sidebar.js?v=20260813-2" defer></script>
+</head>
+<body class="app-page" data-current-page="statistics">
+    <button class="app-sidebar-toggle" id="appSidebarToggle" type="button" aria-controls="appSidebar" aria-expanded="false">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+    </button>
+    <button class="app-sidebar-backdrop" id="appSidebarBackdrop" type="button" aria-label="좌측 패널 닫기"></button>
+    <aside class="app-sidebar" id="appSidebar" aria-label="관리자 페이지 메뉴">
+        <a class="app-sidebar-brand" href="/">
+            <span class="app-sidebar-brand-mark" role="img" aria-label="북구장애인종합복지관 하트 심볼">
+                <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="">
+            </span>
+            <span><strong>북구장복 무료 급식 사업</strong><span>관리자 페이지</span></span>
+        </a>
+        <nav class="app-sidebar-nav" aria-label="주요 메뉴">
+            <p class="app-sidebar-nav-label">관리</p>
+            <a class="app-sidebar-item" href="/">
+                <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+                <span><strong>대시보드</strong><small>명단 · 출석 관리</small></span>
+            </a>
+            <a class="app-sidebar-item is-active" href="/statistics" aria-current="page">
+                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                <span><strong>통계</strong><small>월별 · 개인별 이용 현황</small></span>
+            </a>
+            <a class="app-sidebar-item" href="/guide">
+                <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                <span><strong>도움말</strong><small>서비스 흐름 · 사용법</small></span>
+            </a>
+        </nav>
+        <p class="app-sidebar-footnote">출석 일지에 저장된 <strong>o</strong> 표시를 기준으로 집계합니다.</p>
+    </aside>
+
+    <div class="app-content">
+        <main class="statistics-shell">
+            <header class="app-page-header">
+                <a class="app-page-brand" href="/" aria-label="대시보드로 이동">
+                    <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="북구장애인종합복지관 로고">
+                </a>
+                <span class="app-page-label"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> 통계</span>
+            </header>
+
+            <section class="app-page-hero" aria-labelledby="statisticsTitle">
+                <span class="app-page-eyebrow"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> 통계</span>
+                <h1 id="statisticsTitle">무료급식 이용 현황</h1>
+                <p>월별 출석 일지를 기준으로 제공 건수와 이용 현황을 확인합니다.</p>
+            </section>
+
+            <div class="statistics-content">
+                <div class="statistics-toolbar">
+                <button class="statistics-refresh" id="statisticsRefresh" type="button">
+                    <i class="fa-solid fa-rotate" aria-hidden="true"></i> 새로고침
+                </button>
+                </div>
+
+            <p class="statistics-status" id="statisticsStatus" role="status" aria-live="polite">통계를 불러오는 중입니다.</p>
+
+            <section class="statistics-summary-grid" aria-label="출석 누계 요약">
+                <article class="summary-card is-primary">
+                    <span class="summary-icon"><i class="fa-solid fa-bowl-food" aria-hidden="true"></i></span>
+                    <div><p>누계 제공 건수</p><strong id="totalMealCount">-</strong><small>출석 일지 기준</small></div>
+                </article>
+                <article class="summary-card is-green">
+                    <span class="summary-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                    <div><p>중복 없는 이용자</p><strong id="uniqueUserCount">-</strong><small>1회 이상 이용</small></div>
+                </article>
+                <article class="summary-card is-violet">
+                    <span class="summary-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+                    <div><p id="latestMonthLabel">최근 월 제공 건수</p><strong id="latestMonthMealCount">-</strong><small>해당 월 출석 기록</small></div>
+                </article>
+                <article class="summary-card is-slate">
+                    <span class="summary-icon"><i class="fa-solid fa-file-excel" aria-hidden="true"></i></span>
+                    <div><p>집계 출석 일지</p><strong id="sourceFileCount">-</strong><small>월별 파일 수</small></div>
+                </article>
+            </section>
+
+            <section class="statistics-panel" aria-labelledby="monthlyTitle">
+                <div class="panel-heading">
+                    <div>
+                        <h2 id="monthlyTitle">월별 제공 현황</h2>
+                        <p>출석이 기록된 날만 기준으로 일평균을 계산합니다.</p>
+                    </div>
+                </div>
+                <div class="monthly-chart" id="monthlyChart" aria-label="월별 제공 건수 막대 그래프"></div>
+                <div class="monthly-table-wrap">
+                    <table class="monthly-table">
+                        <thead><tr><th scope="col">월</th><th scope="col">제공 건수</th><th scope="col">누계 제공 건수</th><th scope="col">이용자 수</th><th scope="col">기록일</th><th scope="col">일평균</th></tr></thead>
+                        <tbody id="monthlyTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="statistics-panel" aria-labelledby="personTitle">
+                <div class="panel-heading panel-heading-with-control">
+                    <div>
+                        <h2 id="personTitle">개인별 이용 횟수</h2>
+                        <p id="personTableDescription">이용 횟수가 많은 순으로 표시합니다.</p>
+                    </div>
+                    <label class="person-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input id="personSearch" type="search" placeholder="이름 검색" aria-label="이용자 이름 검색">
+                    </label>
+                </div>
+                <div class="person-table-wrap">
+                    <table class="person-table">
+                        <thead><tr><th scope="col">순위</th><th scope="col">이용자</th><th scope="col">이용 횟수</th><th scope="col">최근 이용일</th></tr></thead>
+                        <tbody id="personTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="statistics.js?v=20260813-1"></script>
+</body>
+</html>

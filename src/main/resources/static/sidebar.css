@@ -19,8 +19,11 @@ body.app-page {
     justify-content: center;
     min-height: 100vh;
     padding: 1.25rem;
-    transition: padding-left 0.22s ease;
+    transition: none;
 }
+
+/* 최초 페이지 진입 때는 저장된 패널 상태를 즉시 적용해 본문이 밀려 보이지 않게 한다. */
+body.sidebar-ready .app-content { transition: padding-left 0.22s ease; }
 
 .app-sidebar {
     position: fixed;
@@ -39,6 +42,7 @@ body.app-page {
     transition: transform 0.22s ease;
 }
 
+html.sidebar-initial-open .app-sidebar,
 body.sidebar-open .app-sidebar {
     transform: translateX(0);
 }
@@ -80,8 +84,9 @@ body.sidebar-open .app-sidebar {
 
 .app-sidebar-brand-mark {
     display: block;
-    flex: 0 0 3.75rem;
-    width: 3.75rem;
+    /* 로고 오른쪽의 글자 영역을 완전히 잘라 하트 심볼만 보여 준다. */
+    flex: 0 0 2.7rem;
+    width: 2.7rem;
     height: 2.5rem;
     overflow: hidden;
 }
@@ -201,7 +206,7 @@ body.sidebar-open .app-sidebar {
 }
 
 @media (min-width: 44rem) {
-    body.app-page:not(.sidebar-open)::before {
+    html:not(.sidebar-initial-open) body.app-page:not(.sidebar-open)::before {
         position: fixed;
         z-index: 21;
         top: 0;
@@ -213,24 +218,28 @@ body.sidebar-open .app-sidebar {
         content: '';
     }
 
-    body.app-page:not(.sidebar-open) .app-content {
+    html:not(.sidebar-initial-open) body.app-page:not(.sidebar-open) .app-content {
         padding-left: 5.75rem;
     }
 }
 
+html.sidebar-initial-open .app-sidebar-backdrop,
 body.sidebar-open .app-sidebar-backdrop {
     display: block;
 }
 
 @media (min-width: 70rem) {
+    html.sidebar-initial-open .app-content,
     body.sidebar-open .app-content {
         padding-left: 18.25rem;
     }
 
+    html.sidebar-initial-open .app-sidebar-toggle,
     body.sidebar-open .app-sidebar-toggle {
         left: 18rem;
     }
 
+    html.sidebar-initial-open .app-sidebar-backdrop,
     body.sidebar-open .app-sidebar-backdrop {
         display: none;
     }

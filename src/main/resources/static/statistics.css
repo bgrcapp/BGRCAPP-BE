@@ -1,0 +1,105 @@
+:root {
+    color: #26324b;
+    background: #f3f7ff;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input { font: inherit; }
+
+.statistics-shell {
+    width: min(74rem, 100%);
+    margin: 1.5rem auto;
+    overflow: hidden;
+    border: 1px solid #dbe5f5;
+    border-radius: 1.15rem;
+    background: #fff;
+    box-shadow: 0 1rem 3rem rgba(45, 72, 125, 0.12);
+}
+
+.statistics-content { padding: clamp(1.2rem, 3vw, 2.2rem); }
+.panel-heading, .panel-heading-with-control { display: flex; }
+h2, p { margin-top: 0; }
+
+.statistics-toolbar { display: flex; justify-content: flex-end; }
+
+.statistics-refresh {
+    flex: 0 0 auto;
+    padding: .56rem .76rem;
+    border: 1px solid #c8d7f2;
+    border-radius: .6rem;
+    color: #3152ae;
+    background: #f7faff;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.statistics-refresh:hover, .statistics-refresh:focus-visible { background: #eaf0ff; }
+.statistics-refresh:disabled { cursor: wait; opacity: .65; }
+.statistics-refresh.is-loading i { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.statistics-status { min-height: 1.4rem; margin: .55rem 0 0; color: #71809a; font-size: .76rem; }
+.statistics-status.is-error { color: #c1362d; }
+
+.statistics-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .8rem;
+    margin: .7rem 0 1.3rem;
+}
+.summary-card { display: flex; align-items: center; gap: .7rem; min-height: 6.9rem; padding: 1rem; border: 1px solid #e1e8f5; border-radius: .85rem; background: #fbfdff; }
+.summary-icon { display: grid; flex: 0 0 2.55rem; width: 2.55rem; height: 2.55rem; place-items: center; border-radius: .65rem; color: #3b60c7; background: #e8f0ff; }
+.summary-card p { margin: 0 0 .12rem; color: #697790; font-size: .72rem; font-weight: 700; }
+.summary-card strong { display: block; color: #1f356f; font-size: 1.28rem; line-height: 1.25; }
+.summary-card small { display: block; margin-top: .08rem; color: #8a97ad; font-size: .63rem; }
+.summary-card.is-green .summary-icon { color: #12866a; background: #e1f8f0; }.summary-card.is-green strong { color: #08785a; }
+.summary-card.is-violet .summary-icon { color: #7257c1; background: #f0eaff; }.summary-card.is-violet strong { color: #5e45a9; }
+.summary-card.is-slate .summary-icon { color: #62718a; background: #edf1f6; }.summary-card.is-slate strong { color: #48566f; }
+
+.statistics-panel { margin-top: 1rem; padding: clamp(1rem, 2.5vw, 1.45rem); border: 1px solid #e3eaf5; border-radius: .9rem; background: linear-gradient(180deg, #fcfdff 0%, #fff 100%); }
+.panel-heading { align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.panel-heading h2 { margin-bottom: .18rem; color: #263858; font-size: var(--app-section-title-size); }
+.panel-heading p { margin-bottom: 0; color: #71809a; font-size: var(--app-body-text-size); }
+
+.monthly-chart { display: flex; align-items: flex-end; gap: clamp(.35rem, 1.3vw, .8rem); min-height: 13.8rem; margin: 1.4rem 0 1.15rem; padding: .8rem .45rem 0; border-bottom: 1px solid #dce6f5; }
+.monthly-bar-item { display: grid; flex: 1 1 0; min-width: 2.45rem; grid-template-rows: 1.1rem 8.75rem 1.25rem 1.15rem; align-items: end; text-align: center; }
+.monthly-bar-item strong { color: #3555b4; font-size: clamp(.62rem, 1.5vw, .76rem); }
+.monthly-bar-track { display: flex; align-items: flex-end; justify-content: center; height: 100%; padding-top: .5rem; }
+.monthly-bar-track span { display: block; width: min(100%, 2.8rem); min-height: .45rem; border-radius: .45rem .45rem 0 0; background: linear-gradient(180deg, #6a8def 0%, #3f64cb 100%); box-shadow: 0 .25rem .65rem rgba(57, 89, 186, .18); }
+.monthly-bar-item small { padding-top: .35rem; color: #74819a; font-size: .66rem; white-space: nowrap; }
+.monthly-bar-item em { padding-top: .12rem; color: #7083b7; font-size: clamp(.48rem, 1vw, .61rem); font-style: normal; font-weight: 700; white-space: nowrap; }
+
+.monthly-table-wrap, .person-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: .7rem .65rem; border-top: 1px solid #e8edf6; color: #596983; font-size: .78rem; white-space: nowrap; }
+thead th { border-top: 0; color: #7a879d; background: #f7f9fd; font-size: .68rem; font-weight: 700; }
+tbody th { color: #314365; font-weight: 700; }
+tbody tr:hover { background: #fbfcff; }
+.monthly-table th:first-child, .monthly-table td:first-child, .person-table th:first-child, .person-table td:first-child { padding-left: .8rem; }
+.monthly-table strong { color: #2e55be; }
+.cumulative-count { color: #6a4eb4; font-weight: 700; }
+
+.panel-heading-with-control { align-items: center; }
+.person-search { display: flex; align-items: center; gap: .38rem; width: 10rem; padding: .42rem .55rem; border: 1px solid #cedaf0; border-radius: .5rem; background: #fff; color: #8490a4; }
+.person-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: #344054; background: transparent; font-size: .73rem; }
+.person-table { margin-top: 1rem; }
+.person-rank { display: inline-grid; width: 1.45rem; height: 1.45rem; place-items: center; border-radius: 50%; color: #5b6b85; background: #eef2f8; font-size: .66rem; font-weight: 700; }
+.person-table tr:nth-child(-n+3) .person-rank { color: #7a5200; background: #fff0c8; }
+.visit-count { color: #14805e; }
+.statistics-empty { padding: 1.5rem .8rem; color: #8b97ab; text-align: center; font-size: .8rem; }
+
+@media (max-width: 58rem) { .statistics-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 44rem) {
+    .statistics-shell { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+    .statistics-content { padding: 1.2rem; }
+    .panel-heading-with-control { align-items: flex-start; flex-direction: column; }
+    .person-search { width: 100%; }
+    .monthly-chart { gap: .2rem; min-height: 12.6rem; padding-inline: 0; }
+    .monthly-bar-item { min-width: 1.9rem; grid-template-rows: 1rem 8rem 1.2rem 1.15rem; }
+    .monthly-bar-item strong { font-size: .55rem; }
+    .monthly-bar-item small { font-size: .57rem; }
+    .monthly-bar-item em { font-size: .46rem; }
+}
+
+@media (max-width: 29rem) { .statistics-summary-grid { grid-template-columns: 1fr; } }

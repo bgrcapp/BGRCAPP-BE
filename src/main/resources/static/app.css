@@ -1,0 +1,150 @@
+/* 대시보드·통계·도움말이 함께 사용하는 화면 기본값 */
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-1Thin.woff2') format('woff2');
+    font-weight: 100;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-2ExtraLight.woff2') format('woff2');
+    font-weight: 200;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-3Light.woff2') format('woff2');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-9Black.woff2') format('woff2');
+    font-weight: 900;
+    font-display: swap;
+}
+
+:root {
+    --app-page-title-size: clamp(1.55rem, 4vw, 2rem);
+    --app-page-title-line-height: 1.3;
+    --app-section-title-size: 1.15rem;
+    --app-body-text-size: 0.9rem;
+    font-family: 'Paperlogy', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+html { font-size: 16px; }
+
+body,
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+/* 대시보드·통계·도움말의 상단 브랜드와 제목 영역 */
+.app-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem clamp(1.25rem, 4vw, 3rem);
+    border-bottom: 1px solid #e9eef7;
+}
+
+.app-page-brand img {
+    display: block;
+    width: 11rem;
+    height: auto;
+}
+
+.app-page-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.52rem 0.8rem;
+    border-radius: 0.55rem;
+    color: #3654aa;
+    background: #edf3ff;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.app-page-hero {
+    padding: clamp(2rem, 6vw, 4.2rem) clamp(1.25rem, 6vw, 4.8rem) 2.7rem;
+    text-align: center;
+    background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 100%);
+}
+
+.app-page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.38rem 0.7rem;
+    border-radius: 999px;
+    color: #3153c1;
+    background: #e7efff;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.app-page-hero h1 {
+    margin: 0.85rem 0 0.55rem;
+    color: #172a55;
+    font-size: var(--app-page-title-size);
+    font-weight: 700;
+    line-height: var(--app-page-title-line-height);
+}
+
+.app-page-hero > p {
+    max-width: 42rem;
+    margin: 0 auto;
+    color: #5e6d87;
+    font-size: var(--app-body-text-size);
+}
+
+@media (max-width: 44rem) {
+    .app-page-header { padding: 0.9rem 1rem; }
+    .app-page-brand img { width: 9rem; }
+    .app-page-label { padding: 0.45rem 0.55rem; font-size: 0.76rem; }
+}

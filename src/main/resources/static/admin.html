@@ -4,12 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 페이지 - 무료급식 출석 시스템</title>
+    <script>
+        try {
+            const sidebarState = localStorage.getItem('attendance.sidebar.open');
+            if (sidebarState === 'true' || (sidebarState === null && matchMedia('(min-width: 70rem)').matches)) {
+                document.documentElement.classList.add('sidebar-initial-open');
+            }
+        } catch (ignored) { }
+    </script>
     <!-- 브라우저가 /favicon.ico를 별도로 요청하지 않도록 인라인 아이콘을 지정한다. -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=20260812-3">
-    <link rel="stylesheet" href="sidebar.css?v=20260812-2">
-    <script src="sidebar.js?v=20260812-1" defer></script>
+    <link rel="stylesheet" href="app.css?v=20260813-3">
+    <link rel="stylesheet" href="admin.css?v=20260813-4">
+    <link rel="stylesheet" href="sidebar.css?v=20260813-4">
+    <script src="sidebar.js?v=20260813-2" defer></script>
 </head>
 <body class="app-page" data-current-page="dashboard">
     <button class="app-sidebar-toggle" id="appSidebarToggle" type="button" aria-controls="appSidebar" aria-expanded="false">
@@ -17,7 +26,7 @@
     </button>
     <button class="app-sidebar-backdrop" id="appSidebarBackdrop" type="button" aria-label="좌측 패널 닫기"></button>
     <aside class="app-sidebar" id="appSidebar" aria-label="관리자 페이지 메뉴">
-        <a class="app-sidebar-brand" href="/admin.html">
+        <a class="app-sidebar-brand" href="/">
             <span class="app-sidebar-brand-mark" role="img" aria-label="북구장애인종합복지관 하트 심볼">
                 <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="">
             </span>
@@ -25,30 +34,38 @@
         </a>
         <nav class="app-sidebar-nav" aria-label="주요 메뉴">
             <p class="app-sidebar-nav-label">관리</p>
-            <a class="app-sidebar-item is-active" href="/admin.html" aria-current="page">
+            <a class="app-sidebar-item is-active" href="/" aria-current="page">
                 <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
                 <span><strong>대시보드</strong><small>명단 · 출석 관리</small></span>
             </a>
-            <a class="app-sidebar-item" href="/사용법.html">
+            <a class="app-sidebar-item" href="/statistics">
+                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                <span><strong>통계</strong><small>월별 · 개인별 이용 현황</small></span>
+            </a>
+            <a class="app-sidebar-item" href="/guide">
                 <i class="fa-solid fa-book-open" aria-hidden="true"></i>
                 <span><strong>도움말</strong><small>서비스 흐름 · 사용법</small></span>
             </a>
-            <button class="app-sidebar-item is-disabled" type="button" disabled title="통계 화면은 다음 작업에서 추가합니다.">
-                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
-                <span><strong>통계</strong><small>준비 중</small></span>
-            </button>
         </nav>
         <p class="app-sidebar-footnote">서버가 실행 중일 때에는 이 화면에서 명단과 출석을 관리하세요.</p>
     </aside>
 
     <div class="app-content">
     <main class="container">
-        <div class="logo">
-            <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="북구장애인종합복지관 로고">
-        </div>
-        <h1>관리자 페이지</h1>
-        <p class="subtitle">무료급식 출석 시스템</p>
+        <header class="app-page-header">
+            <a class="app-page-brand" href="/" aria-label="대시보드로 이동">
+                <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="북구장애인종합복지관 로고">
+            </a>
+            <span class="app-page-label"><i class="fa-solid fa-table-columns" aria-hidden="true"></i> 대시보드</span>
+        </header>
 
+        <section class="app-page-hero" aria-labelledby="dashboardTitle">
+            <span class="app-page-eyebrow"><i class="fa-solid fa-table-columns" aria-hidden="true"></i> 대시보드</span>
+            <h1 id="dashboardTitle">관리자 페이지</h1>
+            <p>이용자 명단을 등록하고, 날짜별 출석 현황을 확인·정정하는 화면입니다.</p>
+        </section>
+
+        <div class="admin-content">
         <div class="admin-layout">
             <section class="admin-left-panel" aria-label="관리자 정보 및 명단 관리">
                 <div class="card">
@@ -157,6 +174,7 @@
                     </button>
                 </div>
             </section>
+        </div>
         </div>
     </main>
     </div>

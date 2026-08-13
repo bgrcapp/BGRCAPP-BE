@@ -4,11 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사용법 - 무료급식 출석 시스템</title>
+    <script>
+        try {
+            const sidebarState = localStorage.getItem('attendance.sidebar.open');
+            if (sidebarState === 'true' || (sidebarState === null && matchMedia('(min-width: 70rem)').matches)) {
+                document.documentElement.classList.add('sidebar-initial-open');
+            }
+        } catch (ignored) { }
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="사용법.css?v=20260812-1">
-    <link rel="stylesheet" href="sidebar.css?v=20260812-2">
-    <script src="sidebar.js?v=20260812-1" defer></script>
+    <link rel="stylesheet" href="app.css?v=20260813-3">
+    <link rel="stylesheet" href="사용법.css?v=20260813-3">
+    <link rel="stylesheet" href="sidebar.css?v=20260813-4">
+    <script src="sidebar.js?v=20260813-2" defer></script>
 </head>
 <body class="app-page" data-current-page="guide">
     <button class="app-sidebar-toggle" id="appSidebarToggle" type="button" aria-controls="appSidebar" aria-expanded="false">
@@ -16,7 +25,7 @@
     </button>
     <button class="app-sidebar-backdrop" id="appSidebarBackdrop" type="button" aria-label="좌측 패널 닫기"></button>
     <aside class="app-sidebar" id="appSidebar" aria-label="관리자 페이지 메뉴">
-        <a class="app-sidebar-brand" href="/admin.html">
+        <a class="app-sidebar-brand" href="/">
             <span class="app-sidebar-brand-mark" role="img" aria-label="북구장애인종합복지관 하트 심볼">
                 <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="">
             </span>
@@ -24,32 +33,32 @@
         </a>
         <nav class="app-sidebar-nav" aria-label="주요 메뉴">
             <p class="app-sidebar-nav-label">관리</p>
-            <a class="app-sidebar-item" href="/admin.html">
+            <a class="app-sidebar-item" href="/">
                 <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
                 <span><strong>대시보드</strong><small>명단 · 출석 관리</small></span>
             </a>
-            <a class="app-sidebar-item is-active" href="/사용법.html" aria-current="page">
+            <a class="app-sidebar-item" href="/statistics">
+                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                <span><strong>통계</strong><small>월별 · 개인별 이용 현황</small></span>
+            </a>
+            <a class="app-sidebar-item is-active" href="/guide" aria-current="page">
                 <i class="fa-solid fa-book-open" aria-hidden="true"></i>
                 <span><strong>도움말</strong><small>서비스 흐름 · 사용법</small></span>
             </a>
-            <button class="app-sidebar-item is-disabled" type="button" disabled title="통계 화면은 다음 작업에서 추가합니다.">
-                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
-                <span><strong>통계</strong><small>준비 중</small></span>
-            </button>
         </nav>
         <p class="app-sidebar-footnote">서버가 실행 중일 때에는 이 화면에서 명단과 출석을 관리하세요.</p>
     </aside>
     <div class="app-content">
     <main class="guide-shell">
-        <header class="guide-header">
-            <a class="brand" href="/admin.html" aria-label="관리자 페이지로 이동">
+        <header class="app-page-header">
+            <a class="app-page-brand" href="/" aria-label="관리자 페이지로 이동">
                 <img src="https://bgrc.or.kr/images/common/logo.jpg" alt="북구장애인종합복지관 로고">
             </a>
-            <span class="guide-page-label"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 도움말</span>
+            <span class="app-page-label"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 도움말</span>
         </header>
 
-        <section class="hero" aria-labelledby="guideTitle">
-            <div class="eyebrow"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 처음 사용하는 분을 위한 안내</div>
+        <section class="app-page-hero" aria-labelledby="guideTitle">
+            <div class="app-page-eyebrow"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 도움말</div>
             <h1 id="guideTitle">무료급식 출석 시스템 사용법</h1>
             <p>명단을 등록한 뒤 QR로 출석을 처리하고, 월별 출석 일지에서 결과를 확인·정정·내보내는 서비스입니다.</p>
             <img class="flow-illustration" src="images/attendance-flow-guide.png" alt="이용자가 QR을 제시하고 태블릿이 확인한 뒤 관리자가 월별 출석 일지를 관리하는 흐름 그림">
@@ -212,7 +221,6 @@
 
         <footer class="guide-footer">
             <p>무료급식 출석 시스템 · 운영 중에는 관리자 페이지를 통해 명단과 출석을 관리하세요.</p>
-            <a href="/admin.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> 관리자 페이지로 돌아가기</a>
         </footer>
     </main>
     </div>
