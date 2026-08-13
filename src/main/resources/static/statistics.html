@@ -15,7 +15,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="app.css?v=20260813-3">
-    <link rel="stylesheet" href="statistics.css?v=20260813-4">
+    <link rel="stylesheet" href="statistics.css?v=20260813-6">
     <link rel="stylesheet" href="sidebar.css?v=20260813-4">
     <script src="sidebar.js?v=20260813-2" defer></script>
 </head>
@@ -112,15 +112,17 @@
                 <div class="panel-heading">
                     <div>
                         <h2 id="dailyTitle">일일 제공 현황</h2>
-                        <p>날짜순으로 합산한 누계입니다. 휴무일은 표시하지 않습니다.</p>
+                        <p>월을 선택하면 날짜별 제공 현황과 누계를 확인할 수 있습니다.</p>
                     </div>
+                    <label class="daily-sort-control" for="dailySortOrder">
+                        <span>정렬</span>
+                        <select id="dailySortOrder" aria-label="일일 제공 현황 정렬">
+                            <option value="desc">최신순</option>
+                            <option value="asc">오래된순</option>
+                        </select>
+                    </label>
                 </div>
-                <div class="daily-table-wrap">
-                    <table class="daily-table">
-                        <thead><tr><th scope="col">날짜</th><th scope="col">당일 제공 건수</th><th scope="col">일일 누계 제공 건수</th><th scope="col">당일 이용자 수</th></tr></thead>
-                        <tbody id="dailyTableBody"></tbody>
-                    </table>
-                </div>
+                <div class="daily-month-list" id="dailyMonthList"></div>
             </section>
 
             <section class="statistics-panel" aria-labelledby="personTitle">
@@ -145,6 +147,6 @@
         </main>
     </div>
 
-    <script src="statistics.js?v=20260813-2"></script>
+    <script src="statistics.js?v=20260813-4"></script>
 </body>
 </html>

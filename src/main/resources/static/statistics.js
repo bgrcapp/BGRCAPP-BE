@@ -52,19 +52,53 @@ function renderMonthlyStatistics(months) {
 }
 
 function renderDailyStatistics(days) {
-    const tableBody = document.getElementById('dailyTableBody');
+    const monthList = document.getElementById('dailyMonthList');
     if (!days.length) {
-        tableBody.innerHTML = '<tr><td colspan="4" class="statistics-empty">집계할 출석 기록이 없습니다.</td></tr>';
+        monthList.innerHTML = '<p class="statistics-empty">집계할 출석 기록이 없습니다.</p>';
         return;
     }
 
-    tableBody.innerHTML = days.map(day => `
-        <tr>
-            <th scope="row">${escapeHtml(day.date)}</th>
-            <td><strong>${formatNumber(day.mealCount)}건</strong></td>
-            <td class="cumulative-count">${formatNumber(day.cumulativeMealCount)}건</td>
-            <td>${formatNumber(day.uniqueUserCount)}명</td>
-        </tr>`).join('');
+    const sortOrder = document.getElementById('dailySortOrder').value;
+    const sortedDays = [...days].sort((left, right) => sortOrder === 'desc'
+        ? right.date.localeCompare(left.date)
+        : left.date.localeCompare(right.date));
+    const daysByMonth = new Map();
+    sortedDays.forEach(day => {
+        const monthKey = day.date.slice(0, 7);
+        const monthDays = daysByMonth.get(monthKey) || [];
+        monthDays.push(day);
+        daysByMonth.set(monthKey, monthDays);
+    });
+    const initialOpenMonth = Array.from(daysByMonth.keys())[0];
+
+    monthList.innerHTML = Array.from(daysByMonth.entries()).map(([monthKey, monthDays]) => {
+        const monthEndDay = monthDays.reduce((latest, day) => day.date > latest.date ? day : latest);
+        const monthLabel = `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`;
+        const mealCount = monthDays.reduce((total, day) => total + Number(day.mealCount || 0), 0);
+        return `
+            <details class="daily-month" ${monthKey === initialOpenMonth ? 'open' : ''}>
+                <summary>
+                    <span class="daily-month-title"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i>${escapeHtml(monthLabel)}</span>
+                    <span class="daily-month-summary">
+                        <strong>${formatNumber(mealCount)}건</strong>
+                        <small>${formatNumber(monthDays.length)}일 기록 · 월말 누계 ${formatNumber(monthEndDay.cumulativeMealCount)}건</small>
+                    </span>
+                    <i class="fa-solid fa-chevron-down daily-month-chevron" aria-hidden="true"></i>
+                </summary>
+                <div class="daily-table-wrap">
+                    <table class="daily-table">
+                        <thead><tr><th scope="col">날짜</th><th scope="col">당일 제공 건수</th><th scope="col">일일 누계 제공 건수</th><th scope="col">당일 이용자 수</th></tr></thead>
+                        <tbody>${monthDays.map(day => `
+                            <tr>
+                                <th scope="row">${escapeHtml(day.date)}</th>
+                                <td><strong>${formatNumber(day.mealCount)}건</strong></td>
+                                <td class="cumulative-count">${formatNumber(day.cumulativeMealCount)}건</td>
+                                <td>${formatNumber(day.uniqueUserCount)}명</td>
+                            </tr>`).join('')}</tbody>
+                    </table>
+                </div>
+            </details>`;
+    }).join('');
 }
 
 function renderPersonStatistics(searchText = '') {
@@ -128,4 +162,6 @@ async function loadStatistics() {
 
 document.getElementById('statisticsRefresh').addEventListener('click', loadStatistics);
 document.getElementById('personSearch').addEventListener('input', event => renderPersonStatistics(event.target.value));
+document.getElementById('dailySortOrder').addEventListener('change', () =>
+    renderDailyStatistics(attendanceStatistics.dailyStatistics || []));
 loadStatistics();
