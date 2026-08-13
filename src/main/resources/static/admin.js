@@ -8,6 +8,7 @@ let attendanceStatusData = {
 let statusHideTimer;
 let statusMessageVersion = 0;
 let rosterUploadInProgress = false;
+let attendanceStatusFilter = 'all';
 
 // 페이지 로드 시 자동으로 현재 설정과 Excel 기반 출석 현황 불러오기
 function initializeAdminData() {
@@ -49,7 +50,12 @@ function renderAttendanceStatus(searchText = '') {
             .map(person => ({ ...person, name: getAttendancePersonName(person) }))
             .filter(person => person.name)
         : [];
-    const filteredRoster = roster.filter(person => person.name.includes(searchText.trim()));
+    const statusFilteredRoster = attendanceStatusFilter === 'checked'
+        ? roster.filter(person => person.attended)
+        : attendanceStatusFilter === 'unchecked'
+            ? roster.filter(person => !person.attended)
+            : roster;
+    const filteredRoster = statusFilteredRoster.filter(person => person.name.includes(searchText.trim()));
     const totalCount = roster.length;
     const checkedCount = roster.filter(person => person.attended).length;
     const progress = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
@@ -61,7 +67,13 @@ function renderAttendanceStatus(searchText = '') {
     document.getElementById('attendanceUnchecked').textContent = totalCount - checkedCount;
     document.getElementById('attendanceProgressBar').style.width = `${progress}%`;
     document.getElementById('attendanceListCount').textContent =
-        `${filteredRoster.length}/${totalCount}명 표시`;
+        `${filteredRoster.length}/${statusFilteredRoster.length}명 표시`;
+
+    document.querySelectorAll('[data-attendance-filter]').forEach(button => {
+        const isActive = button.dataset.attendanceFilter === attendanceStatusFilter;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+    });
 
     const listElement = document.getElementById('attendanceList');
     if (filteredRoster.length === 0) {
@@ -97,6 +109,12 @@ function renderAttendanceStatus(searchText = '') {
             toggleAttendance(button.dataset.serialNumber, button.dataset.personName, button);
         });
     });
+}
+
+function setAttendanceStatusFilter(filter) {
+    // 이미 선택한 출석·결석 카드를 다시 누르면 선택을 해제해 전체 명단으로 돌아간다.
+    attendanceStatusFilter = filter === 'all' || attendanceStatusFilter === filter ? 'all' : filter;
+    renderAttendanceStatus(document.getElementById('attendanceSearch').value);
 }
 
 function showAttendanceEmpty(message) {
@@ -276,6 +294,10 @@ function initializeAdminPage() {
     const attendanceDateLoad = document.getElementById('attendanceDateLoad');
     const attendanceExport = document.getElementById('attendanceExport');
     const rosterUploadButton = document.getElementById('rosterUploadButton');
+
+    document.querySelectorAll('[data-attendance-filter]').forEach(button => {
+        button.addEventListener('click', () => setAttendanceStatusFilter(button.dataset.attendanceFilter));
+    });
 
     attendanceSearch.addEventListener('input', function(event) {
         renderAttendanceStatus(event.target.value);

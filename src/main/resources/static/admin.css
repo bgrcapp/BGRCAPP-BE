@@ -168,6 +168,23 @@ body {
     border: 0.0625rem solid #e5e7eb;
     border-radius: 0.5rem;
     text-align: center;
+    font: inherit;
+    cursor: pointer;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.attendance-summary-item:hover,
+.attendance-summary-item:focus-visible {
+    border-color: #9eb1e5;
+    box-shadow: 0 .25rem .7rem rgba(74, 102, 177, .12);
+    outline: none;
+    transform: translateY(-.05rem);
+}
+
+.attendance-summary-item.is-active {
+    border-color: #5576d5;
+    box-shadow: inset 0 0 0 .0625rem #5576d5, 0 .25rem .7rem rgba(74, 102, 177, .12);
+    background: #f5f8ff;
 }
 
 .attendance-summary-item span {
