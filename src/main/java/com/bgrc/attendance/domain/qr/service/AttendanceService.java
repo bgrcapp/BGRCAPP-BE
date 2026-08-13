@@ -29,7 +29,7 @@ public class AttendanceService {
     /** 서버 시작 시 오늘 생성된 월별 일지에서 출석 상태를 불러온다. */
     @PostConstruct
     public synchronized void init(){
-        loadTodayState();
+        loadTodayState(false);
     }
 
     /**
@@ -111,22 +111,29 @@ public class AttendanceService {
 
     private void ensureTodayState() {
         LocalDate today = LocalDate.now();
-        if (!today.equals(loadedDate)) loadTodayState();
+        if (!today.equals(loadedDate)) loadTodayState(false);
     }
 
-    private void loadTodayState() {
+    /**
+     * 서버 시작·날짜 변경 때는 기존 일지를 그대로 사용한다.
+     * 명단 업로드 직후에만 현재 명단에 맞춰 일지를 다시 구성하며, 기존 출석 표시는 이어받는다.
+     */
+    private void loadTodayState(boolean synchronizeRoster) {
         loadedDate = LocalDate.now();
         attendedToday.clear();
 
-        // 서버 재시작·명단 교체 직후에도 기존 체크(o)는 보존하면서 현재 명단과 일지를 다시 맞춘다.
-        monthlyAttendanceLedgerService.synchronizeCurrentMonth(loadedDate, userService.getUsers());
+        if (synchronizeRoster) {
+            monthlyAttendanceLedgerService.synchronizeCurrentMonth(loadedDate, userService.getUsers());
+        } else {
+            monthlyAttendanceLedgerService.ensureLedger(loadedDate, userService.getUsers());
+        }
         attendanceLogExcelService.initialize(loadedDate);
         attendedToday.addAll(attendanceLogExcelService.loadTodayMarkedKeys(loadedDate));
     }
 
     /** 명단 교체 직후 현재 월 일지와 메모리 출석 상태를 다시 맞춘다. */
     public synchronized void reloadCurrentDate() {
-        loadTodayState();
+        loadTodayState(true);
     }
 
     /** 관리자 화면의 수동 출석/결석 변경도 Excel과 오늘의 메모리 상태에 함께 반영한다. */

@@ -22,6 +22,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AttendanceServiceTest {
@@ -46,6 +48,9 @@ class AttendanceServiceTest {
         AttendanceService attendanceService = new AttendanceService(excelService, monthlyAttendanceLedgerService, userService);
         attendanceService.init();
 
+        verify(monthlyAttendanceLedgerService).ensureLedger(today, List.of());
+        verify(monthlyAttendanceLedgerService, never()).synchronizeCurrentMonth(today, List.of());
+
         assertThat(attendanceService.isAttended("홍길동", "1990-01-01")).isFalse();
 
         attendanceService.createLog("홍길동", "1990-01-01");
@@ -64,6 +69,9 @@ class AttendanceServiceTest {
             assertThat(paths.map(path -> path.getFileName().toString()))
                     .noneMatch(fileName -> fileName.endsWith(".txt"));
         }
+
+        attendanceService.reloadCurrentDate();
+        verify(monthlyAttendanceLedgerService).synchronizeCurrentMonth(today, List.of());
     }
 
     private Path createWorkbook(Path monthlyDirectory, LocalDate date) throws Exception {
