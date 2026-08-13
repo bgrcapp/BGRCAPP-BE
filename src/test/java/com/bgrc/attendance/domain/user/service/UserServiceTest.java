@@ -44,6 +44,8 @@ class UserServiceTest {
 
         assertThat(userRepository.count()).isEqualTo(1);
         assertThat(userRepository.findByNameAndBirthDate("이용자", "1959-03-27")).isTrue();
+        assertThat(userRepository.findUser("이용자", "1959-03-27").orElseThrow().getPhoneNumber())
+                .isEqualTo("010-1234-5678");
         assertThat(userRepository.findByNameAndBirthDate("종결자", "")).isFalse();
     }
 
@@ -138,6 +140,7 @@ class UserServiceTest {
             Row header = sheet.createRow(0);
             header.createCell(1).setCellValue("연번");
             header.createCell(2).setCellValue("성명");
+            header.createCell(4).setCellValue("전화번호");
             header.createCell(5).setCellValue("생년월일");
 
             CellStyle dateStyle = workbook.createCellStyle();
@@ -146,6 +149,7 @@ class UserServiceTest {
             Row activeUserRow = sheet.createRow(1);
             activeUserRow.createCell(1).setCellValue(1);
             activeUserRow.createCell(2).setCellValue(userName);
+            activeUserRow.createCell(4).setCellValue("010-1234-5678");
             Cell activeUserBirthDate = activeUserRow.createCell(5);
             activeUserBirthDate.setCellValue(Date.valueOf("1959-03-27"));
             activeUserBirthDate.setCellStyle(dateStyle);

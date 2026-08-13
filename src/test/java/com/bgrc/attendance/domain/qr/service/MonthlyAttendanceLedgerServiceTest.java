@@ -45,7 +45,7 @@ class MonthlyAttendanceLedgerServiceTest {
                 config, new KoreanHolidayCalendar(holidayApiConfig), new RuntimeDataPathResolver());
         LocalDate date = LocalDate.of(2026, 8, 10);
         List<User> users = List.of(
-                new User("1", "이용자1", "1959-03-27"),
+                new User("1", "이용자1", "1959-03-27", "010-1234-5678"),
                 new User("2", "이용자2", "1960-04-20"));
         // 이전 날짜별 txt 기록은 새 월별 일지에 이관하거나 복구하지 않는다.
         Files.writeString(tempDirectory.resolve("confirmation_2026.08.10.txt"), "이용자1/1959-03-27/12:00:00");
@@ -68,6 +68,7 @@ class MonthlyAttendanceLedgerServiceTest {
             assertThat(dates).doesNotContain(LocalDate.of(2026, 8, 15), LocalDate.of(2026, 8, 16), LocalDate.of(2026, 8, 17));
             assertThat(firstSheet.getRow(3).getCell(1).getStringCellValue()).isEqualTo("1");
             assertThat(firstSheet.getRow(3).getCell(2).getStringCellValue()).isEqualTo("이용자1");
+            assertThat(firstSheet.getRow(3).getCell(3).getStringCellValue()).isEqualTo("010-1234-5678");
             int augustTenthColumn = java.util.stream.IntStream.range(4, header.getLastCellNum())
                     .filter(index -> DateUtil.isCellDateFormatted(header.getCell(index)))
                     .filter(index -> DateUtil.getJavaDate(header.getCell(index).getNumericCellValue()).toInstant()
@@ -83,7 +84,7 @@ class MonthlyAttendanceLedgerServiceTest {
     void preservesMarksWhenMovingAwayFromTheLegacyMonthlyDirectory() throws Exception {
         Path templatePath = createTemplate();
         LocalDate date = LocalDate.of(2026, 8, 10);
-        List<User> users = List.of(new User("1", "이용자1", "1959-03-27"));
+        List<User> users = List.of(new User("1", "이용자1", "1959-03-27", "010-1234-5678"));
 
         AttendanceLogConfig legacyConfig = attendanceConfig(templatePath, tempDirectory.resolve("monthly"));
         MonthlyAttendanceLedgerService legacyService = new MonthlyAttendanceLedgerService(
@@ -94,7 +95,8 @@ class MonthlyAttendanceLedgerServiceTest {
         AttendanceLogConfig directConfig = attendanceConfig(templatePath, tempDirectory);
         MonthlyAttendanceLedgerService directService = new MonthlyAttendanceLedgerService(
                 directConfig, holidayCalendar(), new RuntimeDataPathResolver());
-        Path directLedgerPath = directService.synchronizeCurrentMonth(date, users);
+        Path directLedgerPath = directService.synchronizeCurrentMonth(date, List.of(
+                new User("9", "이용자1", "1959-03-27", "01012345678")));
 
         assertThat(directLedgerPath).isEqualTo(tempDirectory.resolve("무료급식 일일 식사내역_26.8_일지.xlsx"));
         assertThat(markedOn(directLedgerPath, date)).isTrue();
@@ -181,6 +183,7 @@ class MonthlyAttendanceLedgerServiceTest {
         header.createCell(0).setCellValue(2026);
         header.createCell(1).setCellValue("연번");
         header.createCell(2).setCellValue("성명");
+        header.createCell(3).setCellValue("전화번호");
         Cell dateHeader = header.createCell(4);
         dateHeader.setCellValue(Date.valueOf("2026-08-03"));
         dateHeader.setCellStyle(dateStyle);

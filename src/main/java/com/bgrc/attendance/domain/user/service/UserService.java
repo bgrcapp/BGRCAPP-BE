@@ -201,7 +201,10 @@ public class UserService {
                     if (name.isBlank() || isBlank(birthCell)) continue;
 
                     String birthDate = excelFileUtils.formatBirthDate(birthCell);
-                    if (!birthDate.isBlank()) users.add(new User(serialNumber, name, birthDate));
+                    String phoneNumber = layout.phoneNumberColumn() < 0
+                            ? ""
+                            : cellText(row.getCell(layout.phoneNumberColumn()));
+                    if (!birthDate.isBlank()) users.add(new User(serialNumber, name, birthDate, phoneNumber));
                 }
 
                 // 하나의 원본 명단 시트만 사용한다. 여러 시트의 이전·종결 명단을 합치지 않는다.
@@ -221,14 +224,16 @@ public class UserService {
             int serialNumberColumn = -1;
             int nameColumn = -1;
             int birthDateColumn = -1;
+            int phoneNumberColumn = -1;
             for (int columnIndex = 0; columnIndex < row.getLastCellNum(); columnIndex++) {
                 String header = cellText(row.getCell(columnIndex));
                 if (header.contains("연번")) serialNumberColumn = columnIndex;
                 if (header.contains("성명") || header.equals("이름")) nameColumn = columnIndex;
                 if (header.contains("생년월일")) birthDateColumn = columnIndex;
+                if (header.contains("전화번호") || header.contains("연락처")) phoneNumberColumn = columnIndex;
             }
             if (serialNumberColumn >= 0 && nameColumn >= 0 && birthDateColumn >= 0) {
-                return new RosterLayout(rowIndex, serialNumberColumn, nameColumn, birthDateColumn);
+                return new RosterLayout(rowIndex, serialNumberColumn, nameColumn, birthDateColumn, phoneNumberColumn);
             }
         }
         return null;
@@ -425,7 +430,11 @@ public class UserService {
         }
     }
 
-    private record RosterLayout(int headerRowIndex, int serialNumberColumn, int nameColumn, int birthDateColumn) {
+    private record RosterLayout(int headerRowIndex,
+                                int serialNumberColumn,
+                                int nameColumn,
+                                int birthDateColumn,
+                                int phoneNumberColumn) {
     }
 
     private record BackupFile(Path original, Path backup) {

@@ -206,7 +206,11 @@ public class MonthlyAttendanceLedgerService {
                     for (int columnIndex = layout.firstDateColumn(); columnIndex < sheet.getRow(layout.headerRowIndex()).getLastCellNum(); columnIndex++) {
                         LocalDate markedDate = toLocalDate(sheet.getRow(layout.headerRowIndex()).getCell(columnIndex));
                         if (markedDate != null && isMarked(row.getCell(columnIndex))) {
-                            marks.computeIfAbsent(userKey(serial, name), ignored -> new HashSet<>()).add(markedDate);
+                            String phoneNumber = layout.phoneNumberColumn() < 0
+                                    ? ""
+                                    : cellText(row.getCell(layout.phoneNumberColumn()));
+                            marks.computeIfAbsent(userKey(serial, name, phoneNumber), ignored -> new HashSet<>())
+                                    .add(markedDate);
                         }
                     }
                 }
@@ -232,6 +236,9 @@ public class MonthlyAttendanceLedgerService {
         CellStyle weekdayStyle = cellStyle(weekdayRow.getCell(layout.firstDateColumn()));
         CellStyle serialStyle = cellStyle(prototypeRow.getCell(layout.serialNumberColumn()));
         CellStyle nameStyle = cellStyle(prototypeRow.getCell(layout.nameColumn()));
+        CellStyle phoneNumberStyle = layout.phoneNumberColumn() < 0
+                ? null
+                : cellStyle(prototypeRow.getCell(layout.phoneNumberColumn()));
         CellStyle attendanceStyle = cellStyle(prototypeRow.getCell(layout.firstDateColumn()));
 
         int maxDateColumn = Math.max(
@@ -253,17 +260,26 @@ public class MonthlyAttendanceLedgerService {
             Row row = getOrCreateRow(sheet, dataStartRow + rowOffset);
             User user = rowOffset < users.size() ? users.get(rowOffset) : null;
             for (int columnIndex = 0; columnIndex < layout.firstDateColumn(); columnIndex++) {
-                if (columnIndex == layout.serialNumberColumn() || columnIndex == layout.nameColumn()) continue;
+                if (columnIndex == layout.serialNumberColumn()
+                        || columnIndex == layout.nameColumn()
+                        || columnIndex == layout.phoneNumberColumn()) continue;
                 clearCell(row, columnIndex, cellStyle(prototypeRow.getCell(columnIndex)));
             }
             setTextCell(row, layout.serialNumberColumn(), user == null ? "" : user.getSerialNumber(), serialStyle);
             setTextCell(row, layout.nameColumn(), user == null ? "" : user.getName(), nameStyle);
+            if (layout.phoneNumberColumn() >= 0) {
+                setTextCell(row, layout.phoneNumberColumn(), user == null ? "" : user.getPhoneNumber(), phoneNumberStyle);
+            }
             for (int columnIndex = layout.firstDateColumn(); columnIndex <= maxDateColumn; columnIndex++) {
                 clearCell(row, columnIndex, attendanceStyle);
             }
             if (user == null) continue;
 
-            Set<LocalDate> preservedDates = existingMarks.getOrDefault(userKey(user), Set.of());
+            Set<LocalDate> preservedDates = existingMarks.get(userKey(user));
+            if (preservedDates == null) {
+                // 이전 버전이 전화번호 칸을 비워 둔 2026년 8월 파일과도 한 번 호환한다.
+                preservedDates = existingMarks.getOrDefault(userKey(user.getSerialNumber(), user.getName(), ""), Set.of());
+            }
             for (int index = 0; index < businessDays.size(); index++) {
                 if (preservedDates.contains(businessDays.get(index))) {
                     setTextCell(row, layout.firstDateColumn() + index, ATTENDANCE_MARK, attendanceStyle);
@@ -288,15 +304,17 @@ public class MonthlyAttendanceLedgerService {
             if (row == null) continue;
             int serialColumn = -1;
             int nameColumn = -1;
+            int phoneNumberColumn = -1;
             int firstDateColumn = -1;
             for (int columnIndex = 0; columnIndex < row.getLastCellNum(); columnIndex++) {
                 String value = cellText(row.getCell(columnIndex));
                 if (value.contains("연번")) serialColumn = columnIndex;
                 if (value.contains("성명")) nameColumn = columnIndex;
+                if (value.contains("전화번호") || value.contains("연락처")) phoneNumberColumn = columnIndex;
                 if (firstDateColumn < 0 && toLocalDate(row.getCell(columnIndex)) != null) firstDateColumn = columnIndex;
             }
             if (serialColumn >= 0 && nameColumn >= 0) {
-                return new Layout(rowIndex, serialColumn, nameColumn,
+                return new Layout(rowIndex, serialColumn, nameColumn, phoneNumberColumn,
                         firstDateColumn >= 0 ? firstDateColumn : nameColumn + 2);
             }
         }
@@ -337,11 +355,17 @@ public class MonthlyAttendanceLedgerService {
     }
 
     private String userKey(User user) {
-        return userKey(user.getSerialNumber(), user.getName());
+        return userKey(user.getSerialNumber(), user.getName(), user.getPhoneNumber());
     }
 
-    private String userKey(String serial, String name) {
+    private String userKey(String serial, String name, String phoneNumber) {
+        String normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+        if (!normalizedPhoneNumber.isBlank()) return name.strip() + ":" + normalizedPhoneNumber;
         return serial.strip() + ":" + name.strip();
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        return phoneNumber == null ? "" : phoneNumber.replaceAll("[^0-9]", "");
     }
 
     private Row getOrCreateRow(Sheet sheet, int rowIndex) {
@@ -412,6 +436,10 @@ public class MonthlyAttendanceLedgerService {
         Files.copy(templatePath, target, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private record Layout(int headerRowIndex, int serialNumberColumn, int nameColumn, int firstDateColumn) {
+    private record Layout(int headerRowIndex,
+                          int serialNumberColumn,
+                          int nameColumn,
+                          int phoneNumberColumn,
+                          int firstDateColumn) {
     }
 }
